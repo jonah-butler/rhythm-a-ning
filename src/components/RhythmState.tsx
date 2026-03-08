@@ -7,12 +7,14 @@ import { type DropdownOptions } from './Dropdown';
 type RhythmStateProps = {
   beats: DropdownOptions;
   subdivision: DropdownOptions;
+  disabled: boolean;
   onUpdate: (state: BeatState[]) => void;
 };
 
 export default function RhythmState({
   beats,
   subdivision,
+  disabled = false,
   onUpdate,
 }: RhythmStateProps) {
   const beatsParsed = Number(beats.value);
@@ -35,6 +37,8 @@ export default function RhythmState({
   }
 
   const updateState = (row: number, noteIndex: number) => {
+    if (disabled) return;
+
     const notesPerBeat = beatState.length / beatsParsed;
     const index = row * notesPerBeat + noteIndex;
 
@@ -59,6 +63,7 @@ export default function RhythmState({
               'beat',
               noteIndex !== 0 && 'subdivided',
               value === 1 && 'active',
+              disabled ? 'disabled' : '',
             ]
               .filter(Boolean)
               .join(' ')}

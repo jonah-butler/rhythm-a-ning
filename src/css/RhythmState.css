@@ -7,23 +7,22 @@
   width: 100%;
 
   span.beat {
-    /* flex: 1 1 auto; */
     background-color: var(--muted-pink-purple);
     border-radius: 0.5rem;
-    /* height: 22px;
-    width: 35px; */
     width: 100%;
     height: 35px;
   }
   span.beat.active {
     background-color: var(--pink-purple);
   }
+  span.beat.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
   span.beat.subdivided.active {
     background-color: var(--light-purple);
   }
   span.beat.subdivided {
     background-color: var(--muted-light-purple);
-    /* height: 17px;
-    width: 30px; */
   }
 }

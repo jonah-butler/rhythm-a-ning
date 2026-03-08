@@ -52,6 +52,7 @@
   flex-direction: column;
   transition: background-color 0.3s linear;
   cursor: pointer;
+  box-shadow: 0px 0px 5px 5px rgb(248 33 173);
 }
 
 .bpm-spinner__button:active {
@@ -71,7 +72,7 @@
 }
 
 .bpm-spinner__button.running {
-  animation: var(--tempo) linear infinite alternate pulse;
+  /* animation: var(--tempo) linear infinite alternate pulse; */
 }
 
 @keyframes pulse {

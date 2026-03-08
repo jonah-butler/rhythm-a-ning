@@ -590,11 +590,11 @@ export default function Metronome() {
    */
 
   const setLibraryRhythm = (rhythm: Rhythms): void => {
-    if (isRunning) {
+    const preset = RhythmsData[rhythm];
+
+    if (isRunning && preset.beats !== beatCount) {
       toggleMetronome();
     }
-
-    const preset = RhythmsData[rhythm];
     // beat count update
     updateBeatCount(preset.beats.value);
 

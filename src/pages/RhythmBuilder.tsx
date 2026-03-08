@@ -40,6 +40,7 @@ export default function RhythmBuilder() {
 
   const { saveWorkflow } = useIndexedDBContext();
   const [isPlaying, setIsPlaying] = useState(false);
+  const [cardAudioIndex, setCardAudioIndex] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasChange, setHasChange] = useState(false);
   const addBlockBtn = useRef<HTMLDivElement | null>(null);
@@ -129,7 +130,6 @@ export default function RhythmBuilder() {
       conductor.current.start();
 
       conductor.current.on('workflowBlock', (workflow: WorkflowEmit) => {
-        console.log(workflow);
         setActiveWorkflow(workflow);
       });
     }
@@ -140,6 +140,21 @@ export default function RhythmBuilder() {
   const updateWorkflowInput = (name: string): void => {
     setHasChange(true);
     updateWorkflowName(name);
+  };
+
+  const updateGlobalPlayback = (index: number, isPlayingState: boolean) => {
+    // card is playing audio, so kill global audio if running
+    if (isPlayingState) {
+      if (conductor.current && isPlaying) {
+        conductor.current.stop();
+        conductor.current.removeAllListeners();
+        setIsPlaying(false);
+        setActiveWorkflow(null);
+      }
+      setCardAudioIndex(index);
+    } else {
+      setCardAudioIndex(null);
+    }
   };
 
   const progressBarStyles = activeWorkflow
@@ -248,10 +263,14 @@ export default function RhythmBuilder() {
               {rhythmWorkflow.blocks.map((block, i) => (
                 <RhythmBuilderCard
                   onChange={() => setHasChange(true)}
+                  onTogglePlayback={(index, playingState) =>
+                    updateGlobalPlayback(index, playingState)
+                  }
                   block={block}
                   key={block.id}
                   showDelete={i !== 0}
                   index={i}
+                  cardAudioIndex={cardAudioIndex}
                 />
               ))}
             </SortableContext>

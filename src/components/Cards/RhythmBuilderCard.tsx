@@ -1,13 +1,16 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import DragIcon from '../../assets/icons/drag.svg?react';
+import PauseIcon from '../../assets/icons/pause.svg?react';
+import PlayIcon from '../../assets/icons/play.svg?react';
 import TrashIcon from '../../assets/icons/trash.svg?react';
 import { type RhythmBlock } from '../../context/BuilderContext.types';
 import { useRhythmBuilderContext } from '../../context/useBuilderContext';
 import '../../css/RhythmBuilderCard.css';
 import { beatCountData, subdivisionData } from '../../data';
 import { getBeatState, sanitizeOption } from '../../services/rhythm.services';
+import { Conductor } from '../../timing_engine/conductor';
 import Dropdown from '../Dropdown';
 import NumberInput from '../NumberInput';
 import RhythmState from '../RhythmState';
@@ -17,7 +20,9 @@ type RhythmBuilderCardProps = {
   block: RhythmBlock;
   showDelete?: boolean;
   index: number;
+  cardAudioIndex: number | null;
   onChange: () => void;
+  onTogglePlayback: (index: number, isPlaying: boolean) => void;
 };
 
 export default function RhythmBuilderCard({
@@ -25,10 +30,23 @@ export default function RhythmBuilderCard({
   showDelete = true,
   index,
   onChange,
+  onTogglePlayback,
+  cardAudioIndex,
 }: RhythmBuilderCardProps) {
   const { updateBlock, deleteBlock } = useRhythmBuilderContext();
   const [showBeatState, setBeatState] = useState(false);
   const [showPolyBeatState, setPolyBeatState] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    if (cardAudioIndex !== index) {
+      if (conductor.current) {
+        conductor.current.stop();
+        conductor.current.removeAllListeners();
+      }
+      setIsPlaying(false);
+    }
+  }, [cardAudioIndex]);
 
   const id = block.id;
 
@@ -51,6 +69,17 @@ export default function RhythmBuilderCard({
     gap: 10,
     background: isDragging ? 'rgba(9, 9, 9, 0.4)' : 'rgba(9, 9, 9, 1)',
     flex: '0 0 auto',
+  };
+
+  const deleteCardBlock = (): void => {
+    if (isPlaying) {
+      if (conductor.current) {
+        conductor.current.stop();
+        conductor.current.removeAllListeners();
+      }
+    }
+    onTogglePlayback(index, !isPlaying);
+    deleteBlock(block.id);
   };
 
   const updateSubdivision = (newSubdivision: string, isPoly = false): void => {
@@ -102,6 +131,29 @@ export default function RhythmBuilderCard({
 
     onChange();
   };
+  const conductor = useRef<Conductor | null>(null);
+
+  const togglePlayback = () => {
+    if (isPlaying) {
+      if (conductor.current) {
+        conductor.current.stop();
+        conductor.current.removeAllListeners();
+      }
+    } else {
+      const audioCtx = new AudioContext();
+      conductor.current = new Conductor({
+        audioCtx,
+        bpm: block.bpm,
+        workflow: [block],
+      });
+
+      conductor.current.initialize();
+      conductor.current.start();
+    }
+
+    onTogglePlayback(index, !isPlaying);
+    setIsPlaying(!isPlaying);
+  };
 
   return (
     <div
@@ -118,11 +170,22 @@ export default function RhythmBuilderCard({
             style={{ width: '18px', marginRight: '0.25rem' }}
           />
           <span>Block {index + 1}</span>
+          <div className="audio-controls-container">
+            {isPlaying ? (
+              <button onClick={togglePlayback} className="sm-padding">
+                <PauseIcon style={{ width: '15px' }} />
+              </button>
+            ) : (
+              <button onClick={togglePlayback} className="sm-padding">
+                <PlayIcon style={{ width: '15px' }} />
+              </button>
+            )}
+          </div>
         </div>
         {showDelete ? (
           <div>
             <TrashIcon
-              onClick={() => deleteBlock(block.id)}
+              onClick={() => deleteCardBlock()}
               className="trash-icon"
               style={{ width: '16px' }}
             />
@@ -201,6 +264,7 @@ export default function RhythmBuilderCard({
               onUpdate={(state) => updateBlock(block.id, { state })}
               beats={block.beats}
               subdivision={block.subdivision}
+              disabled={false}
             />
           </section>
         ) : null}
@@ -274,6 +338,7 @@ export default function RhythmBuilderCard({
               onUpdate={(state) => updateBlock(block.id, { polyState: state })}
               beats={block.polyBeats}
               subdivision={block.polySubdivision}
+              disabled={!block.usePoly}
             />
           </section>
         ) : null}

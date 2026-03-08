@@ -29,6 +29,11 @@
     display: flex;
     align-items: center;
 
+    .audio-controls-container {
+      margin-left: 0.25rem;
+      top: 5px;
+    }
+
     .drag-icon {
       touch-action: none;
       cursor: grab;

@@ -146,6 +146,10 @@ button.small {
   font-size: 0.8rem;
 }
 
+button.sm-padding {
+  padding: 1px 6px !important;
+}
+
 .polyrhythm-header-container {
   display: flex;
   justify-content: center;

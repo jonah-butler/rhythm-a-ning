@@ -15,6 +15,7 @@ interface BPMSpinnerProps {
   usePolyrhythm: boolean;
   subdivisionIcon: ReactNode;
   polySubdivisionIcon: ReactNode;
+  // currentBeat: number;
   updateBPM: (value: number) => void;
   togglePlayback: () => void;
 }
@@ -35,6 +36,17 @@ function BPMSpinner({
   const bpmSpinnerRef = useRef<HTMLDivElement | null>(null);
 
   let startAngle = 0;
+
+  // const buttonRef = useRef<HTMLDivElement | null>(null);
+
+  // useEffect(() => {
+  //   const el = buttonRef.current;
+  //   if (!el || !isRunning || !Number.isInteger(currentBeat)) return;
+
+  //   el.style.animation = 'none';
+  //   el.getBoundingClientRect();
+  //   el.style.animation = '';
+  // }, [currentBeat]);
 
   useEffect(() => {
     setCount(bpm);
@@ -197,7 +209,11 @@ function BPMSpinner({
       <div
         onClick={tapTempo}
         className={`${isRunning ? 'running ' : ''}${usePolyrhythm ? 'small ' : ''}bpm-spinner__button`}
-        style={{ '--tempo': `${60 / styleCount / 2}s` } as React.CSSProperties} // fix this
+        style={
+          {
+            '--tempo': `${(60 / styleCount / 2).toFixed(3)}s`,
+          } as React.CSSProperties
+        }
       >
         <span className="tap-indicator">tap</span>
         <div className="note-container">
