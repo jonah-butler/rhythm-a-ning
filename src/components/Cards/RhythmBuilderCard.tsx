@@ -20,9 +20,9 @@ type RhythmBuilderCardProps = {
   block: RhythmBlock;
   showDelete?: boolean;
   index: number;
-  cardAudioIndex: number | null;
+  cardAudioId: string | null;
   onChange: () => void;
-  onTogglePlayback: (index: number, isPlaying: boolean) => void;
+  onTogglePlayback: (id: string, isPlaying: boolean) => void;
 };
 
 export default function RhythmBuilderCard({
@@ -31,7 +31,7 @@ export default function RhythmBuilderCard({
   index,
   onChange,
   onTogglePlayback,
-  cardAudioIndex,
+  cardAudioId,
 }: RhythmBuilderCardProps) {
   const { updateBlock, deleteBlock } = useRhythmBuilderContext();
   const [showBeatState, setBeatState] = useState(false);
@@ -39,14 +39,14 @@ export default function RhythmBuilderCard({
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
-    if (cardAudioIndex !== index) {
+    if (cardAudioId !== block.id) {
       if (conductor.current) {
         conductor.current.stop();
         conductor.current.removeAllListeners();
       }
       setIsPlaying(false);
     }
-  }, [cardAudioIndex]);
+  }, [cardAudioId]);
 
   const id = block.id;
 
@@ -78,7 +78,7 @@ export default function RhythmBuilderCard({
         conductor.current.removeAllListeners();
       }
     }
-    onTogglePlayback(index, !isPlaying);
+    onTogglePlayback(block.id, !isPlaying);
     deleteBlock(block.id);
   };
 
@@ -151,7 +151,7 @@ export default function RhythmBuilderCard({
       conductor.current.start();
     }
 
-    onTogglePlayback(index, !isPlaying);
+    onTogglePlayback(block.id, !isPlaying);
     setIsPlaying(!isPlaying);
   };
 
@@ -170,6 +170,7 @@ export default function RhythmBuilderCard({
             style={{ width: '18px', marginRight: '0.25rem' }}
           />
           <span>Block {index + 1}</span>
+          <span>{block.id}</span>
           <div className="audio-controls-container">
             {isPlaying ? (
               <button onClick={togglePlayback} className="sm-padding">
