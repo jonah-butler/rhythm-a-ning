@@ -39,7 +39,7 @@ export default function RhythmBuilderCard({
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
-    if (cardAudioId !== block.id) {
+    if (cardAudioId !== block.id && isPlaying) {
       if (conductor.current) {
         conductor.current.stop();
         conductor.current.removeAllListeners();

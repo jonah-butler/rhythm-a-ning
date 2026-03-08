@@ -119,6 +119,7 @@ export default function RhythmBuilder() {
         setActiveWorkflow(null);
       }
     } else {
+      setCardAudioId(null);
       const audioCtx = new AudioContext();
       conductor.current = new Conductor({
         audioCtx,
