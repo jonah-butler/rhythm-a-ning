@@ -170,7 +170,6 @@ export default function RhythmBuilderCard({
             style={{ width: '18px', marginRight: '0.25rem' }}
           />
           <span>Block {index + 1}</span>
-          <span>{block.id}</span>
           <div className="audio-controls-container">
             {isPlaying ? (
               <button onClick={togglePlayback} className="sm-padding">
