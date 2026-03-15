@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { toast, ToastContainer } from 'react-toastify';
 import '../App.css';
 import BeatGridSettings from '../assets/icons/beat-grid-settings.svg?react';
 import LibrarySettings from '../assets/icons/folder.svg?react';
+import ShareIcon from '../assets/icons/share.svg?react';
 import SoundSettings from '../assets/icons/sound-settings.svg?react';
 import Display from '../components/Display';
 import Dropdown, { type DropdownOptions } from '../components/Dropdown';
@@ -635,6 +637,39 @@ export default function Metronome() {
     conductor.current?.getRhythm(0).resetState(preset.state);
   };
 
+  const generateShareableUrl = async (): Promise<void> => {
+    let url = `${window.location.origin}${window.location.pathname}`;
+    url += `?bpm=${bpm}`;
+
+    const beats = beatCountData.findIndex(
+      (data) => data.value === beatCount.value,
+    );
+    url += `&bc=${beats}`;
+
+    const sub = subdivisionData.findIndex(
+      (data) => data.value === subdivision.value,
+    );
+    url += `&bs=${sub}`;
+
+    if (usePolyrhythm) {
+      url += `&p=1`;
+
+      const beats = beatCountData.findIndex(
+        (data) => data.value === polyBeatCount.value,
+      );
+      url += `&pc=${beats}`;
+
+      const sub = subdivisionData.findIndex(
+        (data) => data.value === polySubdivision.value,
+      );
+      url += `&ps=${sub}`;
+    }
+
+    await navigator.clipboard.writeText(url);
+
+    toast('url copied to clipboard');
+  };
+
   return (
     <>
       <section className="metronome__outer-container">
@@ -1048,13 +1083,17 @@ export default function Metronome() {
         </Tabs.Tab>
       </Tabs>
 
-      {!isMobileUserAgent() && (
-        <section className="settings-row">
-          <div>
+      <section className="settings-row">
+        <div className="flex f-gap2">
+          {!isMobileUserAgent() && (
             <button onClick={toggleFullscreen}>fullscreen</button>
-          </div>
-        </section>
-      )}
+          )}
+          <button onClick={generateShareableUrl}>
+            <ShareIcon style={{ width: '18px' }} /> share
+          </button>
+        </div>
+      </section>
+      <ToastContainer theme="dark" progressClassName="bg-pink-purple" />
     </>
   );
 }
