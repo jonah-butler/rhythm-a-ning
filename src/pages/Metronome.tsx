@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import '../App.css';
 import BeatGridSettings from '../assets/icons/beat-grid-settings.svg?react';
 import LibrarySettings from '../assets/icons/folder.svg?react';
@@ -9,6 +10,7 @@ import Slider from '../components/Slider';
 import { Tabs } from '../components/Tabs/Tabs';
 import Toggle from '../components/Toggle';
 import { beatCountData, subdivisionData } from '../data';
+import { parseMetronomeQueryParams } from '../helpers/metronome.helpers';
 import {
   getBeatCount,
   getBeatState,
@@ -24,14 +26,25 @@ import { type BeatState } from '../timing_engine/rhythm.types';
 import { Subdivisions } from '../timing_engine/types';
 
 export default function Metronome() {
+  const routes = useLocation();
+
   /**
    * +++++++++++++++++++
    * Metronome Defaults
    * +++++++++++++++++++
    */
-  const defaultBpm = 60;
+  let defaultBeatCount = beatCountData[3];
+  let defaultBpm = 60;
   const defaultFrequency = 750;
-  const defaultBeatCount = beatCountData[3];
+
+  const parsedDefaults = parseMetronomeQueryParams(routes.search);
+  if (parsedDefaults.baseCount) {
+    defaultBeatCount = beatCountData[parsedDefaults.baseCount];
+  }
+
+  if (parsedDefaults.bpm) {
+    defaultBpm = parsedDefaults.bpm;
+  }
 
   /**
    * ++++++++++++++++++++
@@ -52,7 +65,7 @@ export default function Metronome() {
    * Conductor State
    * +++++++++++++++++
    */
-  const [bpm, setBPM] = useState(60);
+  const [bpm, setBPM] = useState(defaultBpm);
   const [isRunning, setIsRunning] = useState(false);
 
   /**
@@ -66,12 +79,13 @@ export default function Metronome() {
     subdividedOffset: -3,
     gain: 0.5,
   });
-  // const [frequency, setFrequency] = useState(defaultFrequency); // retire
 
   const beatCountRef = useRef(defaultBeatCount);
   const [beatCount, setBeatCount] = useState<DropdownOptions>(defaultBeatCount);
   const [subdivision, setSubdivision] = useState<DropdownOptions>(
-    subdivisionData[0],
+    parsedDefaults.baseSubdivion
+      ? subdivisionData[parsedDefaults.baseSubdivion]
+      : subdivisionData[0],
   );
   const subdivisionRef = useRef(subdivision);
   // emitted from rhythm instance
@@ -94,12 +108,15 @@ export default function Metronome() {
     subdividedOffset: -3,
     gain: 0.5,
   });
-  // const [polyFrequency, setPolyFrequency] = useState(550); // retire
   const [polyBeatCount, setPolyBeatCount] = useState<DropdownOptions>(
-    beatCountData[2],
+    parsedDefaults.polyCount
+      ? beatCountData[parsedDefaults.polyCount]
+      : beatCountData[2],
   );
   const [polySubdivision, setPolySubdivision] = useState<DropdownOptions>(
-    subdivisionData[0],
+    parsedDefaults.polySubdivision
+      ? subdivisionData[parsedDefaults.polySubdivision]
+      : subdivisionData[0],
   );
   const polySubdivisionRef = useRef(polySubdivision);
   // emitted from polyrhythm instance
@@ -116,7 +133,9 @@ export default function Metronome() {
    * App State
    * ++++++++++
    */
-  const [usePolyrhythm, setUsePolyrhythm] = useState(false);
+  const [usePolyrhythm, setUsePolyrhythm] = useState(
+    parsedDefaults.usePoly ? parsedDefaults.usePoly : false,
+  );
   const [selectedSetting, setSelectedSetting] = useState('metronome');
   const [tab, setTab] = useState(0);
   // const [polyTab, setPolyTab] = useState(0);

@@ -38,10 +38,10 @@
 }
 
 .grid-container.ghost .dot {
-  border: 4px solid var(--muted-light-purple);
+  border: 2px solid var(--muted-light-purple);
   background-color: transparent;
-  left: 45.6%;
-  top: 46%;
+  left: 46.2%;
+  top: 46.4%;
 }
 
 .grid-container .dot {
@@ -107,10 +107,10 @@
 }
 
 .grid-container.small.ghost .dot {
-  border: 4px solid var(--muted-light-purple);
+  border: 2px solid var(--muted-light-purple);
   background-color: transparent;
-  left: 46.6%;
-  top: 46.9%;
+  left: 47.1%;
+  top: 47.5%;
 }
 
 .grid-container.small .dot {
@@ -164,8 +164,8 @@ for mobile
   }
 
   .grid-container.ghost .dot {
-    left: 44.7% !important;
-    top: 45.7% !important;
+    left: 45.2% !important;
+    top: 46.4% !important;
   }
 
   .grid-container .dot.subdivision {
@@ -183,19 +183,14 @@ for mobile
     top: 46.7% !important;
   }
 
-  .grid-container.small.ghost .dot.subdivsion {
-    left: 46.5% !important;
-    top: 46.5% !important;
-  }
-
   .grid-container.small {
     width: 270px !important;
     height: 270px !important;
   }
 
   .grid-container.small.ghost div.dot:not(.subdivision) {
-    left: 45.4% !important;
-    top: 46.5% !important;
+    left: 46.3% !important;
+    top: 47.1% !important;
   }
 
   .grid-container.small > .dot {
@@ -213,8 +208,8 @@ for mobile
   }
 
   .grid-container.small.ghost .dot.subdivision {
-    left: 46.5% !important;
-    top: 46.5% !important;
+    left: 47.5% !important;
+    top: 47% !important;
   }
 
   .bpm-spinner__rotary {
