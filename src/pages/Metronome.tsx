@@ -92,10 +92,14 @@ export default function Metronome() {
   const subdivisionRef = useRef(subdivision);
   // emitted from rhythm instance
   const [currentBeat, setCurrentBeat] = useState(1);
-  const defaultBeats = new Array(
-    parseInt(beatCount.value) /
-      Subdivisions[subdivision.value as keyof typeof Subdivisions],
-  ).fill(1);
+
+  const defaultBeats = parsedDefaults.beatState
+    ? parsedDefaults.beatState
+    : new Array(
+        parseInt(beatCount.value) /
+          Subdivisions[subdivision.value as keyof typeof Subdivisions],
+      ).fill(1);
+
   const [totalBeats, setTotalBeats] = useState<BeatState[]>(defaultBeats);
   const totalBeatsRef = useRef<BeatState[]>(defaultBeats);
 
@@ -123,10 +127,14 @@ export default function Metronome() {
   const polySubdivisionRef = useRef(polySubdivision);
   // emitted from polyrhythm instance
   const [polyBeat, setPolyBeat] = useState(1);
-  const defaultPolyBeats = new Array(
-    parseInt(polyBeatCount.value) /
-      Subdivisions[polySubdivision.value as keyof typeof Subdivisions],
-  ).fill(1);
+
+  const defaultPolyBeats = parsedDefaults.polyBeatState
+    ? parsedDefaults.polyBeatState
+    : new Array(
+        parseInt(polyBeatCount.value) /
+          Subdivisions[polySubdivision.value as keyof typeof Subdivisions],
+      ).fill(1);
+
   const [totalPolyBeats, setTotalPolyBeats] =
     useState<BeatState[]>(defaultPolyBeats);
   const totalPolyBeatsRef = useRef<BeatState[]>(defaultPolyBeats);
@@ -638,34 +646,39 @@ export default function Metronome() {
   };
 
   const generateShareableUrl = async (): Promise<void> => {
-    let url = `${window.location.origin}${window.location.pathname}`;
-    url += `?bpm=${bpm}`;
+    const url = `${window.location.origin}${window.location.pathname}?`;
+
+    let query = `bpm=${bpm}`;
 
     const beats = beatCountData.findIndex(
       (data) => data.value === beatCount.value,
     );
-    url += `&bc=${beats}`;
+    query += `&bc=${beats}`;
 
     const sub = subdivisionData.findIndex(
       (data) => data.value === subdivision.value,
     );
-    url += `&bs=${sub}`;
+    query += `&bs=${sub}`;
+
+    query += `&bst=${totalBeats.join('')}`;
 
     if (usePolyrhythm) {
-      url += `&p=1`;
+      query += `&p=1`;
 
       const beats = beatCountData.findIndex(
         (data) => data.value === polyBeatCount.value,
       );
-      url += `&pc=${beats}`;
+      query += `&pc=${beats}`;
 
       const sub = subdivisionData.findIndex(
         (data) => data.value === polySubdivision.value,
       );
-      url += `&ps=${sub}`;
+      query += `&ps=${sub}`;
+
+      query += `&pbst=${totalPolyBeats.join('')}`;
     }
 
-    await navigator.clipboard.writeText(url);
+    await navigator.clipboard.writeText(`${url}${btoa(query)}`);
 
     toast('url copied to clipboard');
   };
