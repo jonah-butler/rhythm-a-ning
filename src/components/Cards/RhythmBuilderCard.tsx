@@ -9,7 +9,11 @@ import { type RhythmBlock } from '../../context/BuilderContext.types';
 import { useRhythmBuilderContext } from '../../context/useBuilderContext';
 import '../../css/RhythmBuilderCard.css';
 import { beatCountData, subdivisionData } from '../../data';
-import { getBeatState, sanitizeOption } from '../../services/rhythm.services';
+import {
+  getBeatSoundState,
+  getBeatState,
+  sanitizeOption,
+} from '../../services/rhythm.services';
 import { Conductor } from '../../timing_engine/conductor';
 import { Sound } from '../../timing_engine/oscillator.types';
 import Dropdown from '../Dropdown';
@@ -97,9 +101,16 @@ export default function RhythmBuilderCard({
           subdivision.value,
         );
 
+        const polyBeatSounds = getBeatSoundState(
+          newState.length,
+          block.polyBeatSounds,
+          Sound.Oscillator,
+        );
+
         updateBlock(block.id, {
           polySubdivision: sanitizeOption(subdivision),
           polyState: newState,
+          polyBeatSounds,
         });
       }
     } else {
@@ -108,9 +119,17 @@ export default function RhythmBuilderCard({
           Number(block.beats.value),
           subdivision.value,
         );
+
+        const beatSounds = getBeatSoundState(
+          newState.length,
+          block.beatSounds,
+          Sound.Oscillator,
+        );
+
         updateBlock(block.id, {
           subdivision: sanitizeOption(subdivision),
           state: newState,
+          beatSounds,
         });
       }
     }
@@ -126,10 +145,17 @@ export default function RhythmBuilderCard({
         Number(beats?.value),
         block.polySubdivision.value,
       );
-      updateBlock(block.id, { polyBeats: beats, polyState });
+      const polyBeatSounds = getBeatSoundState(
+        polyState.length,
+        block.polyBeatSounds,
+        Sound.Oscillator,
+      );
+      updateBlock(block.id, { polyBeats: beats, polyState, polyBeatSounds });
     } else {
       const state = getBeatState(Number(beats?.value), block.subdivision.value);
-      updateBlock(block.id, { beats, state });
+      const beatSounds = getBeatSoundState(state.length, block.beatSounds);
+
+      updateBlock(block.id, { beats, state, beatSounds });
     }
 
     onChange();

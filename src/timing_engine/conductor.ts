@@ -153,6 +153,7 @@ export class Conductor extends Emitter<CondcutorEvents> {
           r1.updateSounds(newWorkflow.beatSounds);
           if (newWorkflow.usePoly) {
             if (this.numberOfRhythms !== 2) {
+              console.log('new', newWorkflow);
               const r2 = new Rhythm({
                 subdivision: getSubdivision(newWorkflow.polySubdivision.value),
                 beats: Number(newWorkflow.beats.value),
