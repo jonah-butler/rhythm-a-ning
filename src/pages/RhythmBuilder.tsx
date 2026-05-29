@@ -100,6 +100,7 @@ export default function RhythmBuilder() {
 
   const conductor = useRef<Conductor | null>(null);
   const audioCtx = useRef<AudioContext | null>(null);
+  const [audioCtxReady, setAudioCtxReady] = useState<AudioContext | null>(null);
 
   const [activeWorkflow, setActiveWorkflow] = useState<WorkflowEmit | null>(
     null,
@@ -109,12 +110,15 @@ export default function RhythmBuilder() {
     if (!audioCtx.current) {
       audioCtx.current = new AudioContext();
       loadSounds(audioCtx.current);
+      setAudioCtxReady(audioCtx.current);
     }
 
     return () => {
       if (conductor.current) {
         conductor.current.stop();
         conductor.current.removeAllListeners();
+        audioCtx.current = null;
+        setAudioCtxReady(null);
       }
     };
   }, []);
@@ -162,7 +166,6 @@ export default function RhythmBuilder() {
     // card is playing audio, so kill global audio if running
     if (isPlayingState) {
       if (conductor.current && isPlaying) {
-        console.log('yeah 2');
         conductor.current.stop();
         conductor.current.removeAllListeners();
         setIsPlaying(false);
@@ -172,7 +175,6 @@ export default function RhythmBuilder() {
         // and the card currently active
         // in global context is playing is pressed
         if (activeWorkflow?.id === id) {
-          console.log('yeahhh');
           setCardAudioId(null);
           setActiveWorkflow(null);
         }
@@ -308,7 +310,7 @@ export default function RhythmBuilder() {
                   showDelete={i !== 0}
                   index={i}
                   cardAudioId={cardAudioId}
-                  audioCtx={audioCtx.current}
+                  audioCtx={audioCtxReady}
                 />
               ))}
             </SortableContext>
