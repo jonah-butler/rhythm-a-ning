@@ -77,7 +77,6 @@ export class Conductor extends Emitter<CondcutorEvents> {
   initialize(): void {
     if (this.workflow && this.workflow.length) {
       const block = this.workflow[0];
-      console.log(block);
 
       const osc1 = new Oscillator({
         audioCtx: this.audioCtx,
@@ -98,6 +97,8 @@ export class Conductor extends Emitter<CondcutorEvents> {
         type: PlayerType.Sound,
         sound: Sound.Kick,
       });
+
+      console.log(block);
 
       const r1 = new Rhythm({
         subdivision: getSubdivision(block.subdivision.value),
@@ -158,11 +159,7 @@ export class Conductor extends Emitter<CondcutorEvents> {
                 state: newWorkflow.polyState,
                 sound: osc2,
                 poly: Number(newWorkflow.polyBeats.value),
-                sounds: getBeatSoundState(
-                  newWorkflow.polyState.length,
-                  [],
-                  Sound.Oscillator,
-                ),
+                sounds: newWorkflow.polyBeatSounds,
               });
 
               this.addRhythm(r2);
@@ -178,6 +175,7 @@ export class Conductor extends Emitter<CondcutorEvents> {
               polyRhythm.setSubdivision(
                 getSubdivision(newWorkflow.polySubdivision.value),
               );
+              polyRhythm.updateSounds(newWorkflow.polyBeatSounds);
             }
           } else {
             if (this.numberOfRhythms === 2) {
@@ -198,7 +196,7 @@ export class Conductor extends Emitter<CondcutorEvents> {
           poly: Number(block.polyBeats.value),
           sounds: getBeatSoundState(
             block.polyState.length,
-            [],
+            block.polyBeatSounds,
             Sound.Oscillator,
           ),
         });
@@ -301,6 +299,7 @@ export class Conductor extends Emitter<CondcutorEvents> {
 
   removeRhythm(index: number) {
     if (this.rhythms[index]) {
+      this.rhythms[index].killed = true;
       this.rhythms = [
         ...this.rhythms.slice(0, index),
         ...this.rhythms.slice(index + 1),

@@ -140,9 +140,16 @@ export default function RhythmBuilderCard({
     index: number,
     isPoly = false,
   ): void => {
-    const updatedSounds = block.beatSounds.map((value, i) =>
-      i === index ? sound : value,
-    );
+    let updatedSounds: Sound[] = [] as Sound[];
+    if (isPoly) {
+      updatedSounds = block.polyBeatSounds.map((value, i) =>
+        i === index ? sound : value,
+      );
+    } else {
+      updatedSounds = block.beatSounds.map((value, i) =>
+        i === index ? sound : value,
+      );
+    }
 
     if (isPoly) {
       updateBlock(block.id, { polyBeatSounds: updatedSounds });

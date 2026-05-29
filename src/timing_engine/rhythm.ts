@@ -227,6 +227,7 @@ export class Rhythm extends Emitter<RhythmEvents> {
   }
 
   play(): void {
+    if (this.killed) return;
     const tempBeat = this.beatTrack;
 
     if (this.pendingBeatChanges.hasUpdate && tempBeat === 1) {
