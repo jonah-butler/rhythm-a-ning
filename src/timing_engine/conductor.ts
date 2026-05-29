@@ -208,10 +208,13 @@ export class Conductor extends Emitter<CondcutorEvents> {
   }
 
   generateSubdivisionTable(r1: Rhythm, r2: Rhythm): number[] | undefined {
-    const partial = this.cleanFloat(r1.beats / r2.poly);
-    const beatPositionGrid = [1];
-    for (let i = 0; i < r2.poly - 1; i++) {
-      beatPositionGrid.push(beatPositionGrid[i] + partial);
+    const beatSpacing = this.cleanFloat(r1.beats / r2.poly);
+    const subSpacing = this.cleanFloat(beatSpacing * r2.subdivision);
+    const totalSteps = Math.round(r2.poly / r2.subdivision);
+
+    const beatPositionGrid: number[] = [];
+    for (let i = 0; i < totalSteps; i++) {
+      beatPositionGrid.push(this.cleanFloat(1 + i * subSpacing));
     }
 
     return beatPositionGrid;
@@ -254,8 +257,8 @@ export class Conductor extends Emitter<CondcutorEvents> {
         rhythm.nextNote = now + MIN_LEAD;
       }
 
-      rhythm.beatTrack = step + 1;
       rhythm.step = step;
+      rhythm.beatTrack = rhythm.cleanFloat(step * rhythm.subdivision + 1);
 
       rhythm.killed = false;
     } else {

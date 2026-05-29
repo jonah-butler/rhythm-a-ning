@@ -65,8 +65,6 @@ function BPMGrid({
     menuCloseTimer.current = setTimeout(() => setMenuOpenDot(null), 350);
   };
 
-  console.log('beat sounds: ', beatSounds);
-
   const handleDotMouseEnter = (i: number) => {
     cancelMenuClose();
     if (menuOpenDot !== null) {

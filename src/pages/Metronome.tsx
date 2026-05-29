@@ -415,7 +415,11 @@ export default function Metronome() {
       newSubdivision.value,
     );
 
-    const newSounds = getBeatSoundState(newBeatState.length, beatSounds);
+    const newSounds = getBeatSoundState(
+      newBeatState.length,
+      beatSounds,
+      Sound.Oscillator,
+    );
 
     if (conductor.current) {
       const rhythm = conductor.current.getRhythm(0);
