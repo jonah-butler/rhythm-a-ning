@@ -149,6 +149,7 @@ export class Conductor extends Emitter<CondcutorEvents> {
           const r1 = this.getRhythm(0);
           r1.resetState(newWorkflow.state);
           r1.setSubdivision(getSubdivision(newWorkflow.subdivision.value));
+          r1.updateSounds(newWorkflow.beatSounds);
           if (newWorkflow.usePoly) {
             if (this.numberOfRhythms !== 2) {
               const r2 = new Rhythm({
