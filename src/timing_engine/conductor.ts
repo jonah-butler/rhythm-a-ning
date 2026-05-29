@@ -1,14 +1,16 @@
 import type { RhythmBlock } from '../context/BuilderContext.types';
 import { Emitter } from '../services/emit';
-import { getSubdivision } from '../services/rhythm.services';
+import { getBeatSoundState, getSubdivision } from '../services/rhythm.services';
 import type {
   CondcutorEvents,
   ConductorParams,
   WorkflowEmit,
 } from './conductor.types';
 import { Oscillator } from './oscillator';
+import { PlayerType, Sound } from './oscillator.types';
 import { Rhythm } from './rhythm';
 
+// complete
 export interface IConductor {
   on(event: 'workflowBlock', listener: (data: WorkflowEmit) => void): this;
 }
@@ -20,9 +22,6 @@ export class Conductor extends Emitter<CondcutorEvents> {
   private rhythms: Rhythm[] = [];
   private measures = 0;
   private currentBlock = 0;
-  // private audioElement: HTMLAudioElement;
-  // private streamDest: MediaStreamAudioDestinationNode;
-  // private masterGain: GainNode;
 
   audioCtx: AudioContext;
   bpm: number;
@@ -33,19 +32,6 @@ export class Conductor extends Emitter<CondcutorEvents> {
     this.audioCtx = audioCtx;
     this.bpm = bpm;
     this.workflow = workflow;
-
-    // this.audioElement = document.createElement('audio');
-    // this.audioElement.muted = false;
-
-    // this.streamDest = this.audioCtx.createMediaStreamDestination();
-
-    // // master output
-    // this.masterGain = this.audioCtx.createGain();
-    // this.masterGain.gain.value = 1.0;
-
-    // // route WebAudio -> stream -> audio element
-    // this.masterGain.connect(this.streamDest);
-    // this.audioElement.srcObject = this.streamDest.stream;
   }
 
   private get currentTime(): number {
@@ -91,15 +77,34 @@ export class Conductor extends Emitter<CondcutorEvents> {
   initialize(): void {
     if (this.workflow && this.workflow.length) {
       const block = this.workflow[0];
+      console.log(block);
 
-      const osc1 = new Oscillator(this.audioCtx, 750, 3, -3, 0.5);
-      const osc2 = new Oscillator(this.audioCtx, 550, 3, -3, 0.5);
+      const osc1 = new Oscillator({
+        audioCtx: this.audioCtx,
+        frequency: 750,
+        beatOneOffset: 3,
+        subdividedOffset: -3,
+        gain: 0.5,
+        type: PlayerType.Sound,
+        sound: Sound.Kick,
+      });
+
+      const osc2 = new Oscillator({
+        audioCtx: this.audioCtx,
+        frequency: 550,
+        beatOneOffset: 3,
+        subdividedOffset: -3,
+        gain: 0.5,
+        type: PlayerType.Sound,
+        sound: Sound.Kick,
+      });
 
       const r1 = new Rhythm({
         subdivision: getSubdivision(block.subdivision.value),
         beats: Number(block.beats.value),
         state: block.state,
         sound: osc1,
+        sounds: block.beatSounds,
       });
 
       r1.on('scheduled', (beat: number) => {
@@ -152,6 +157,11 @@ export class Conductor extends Emitter<CondcutorEvents> {
                 state: newWorkflow.polyState,
                 sound: osc2,
                 poly: Number(newWorkflow.polyBeats.value),
+                sounds: getBeatSoundState(
+                  newWorkflow.polyState.length,
+                  [],
+                  Sound.Oscillator,
+                ),
               });
 
               this.addRhythm(r2);
@@ -185,6 +195,11 @@ export class Conductor extends Emitter<CondcutorEvents> {
           state: block.polyState,
           sound: osc2,
           poly: Number(block.polyBeats.value),
+          sounds: getBeatSoundState(
+            block.polyState.length,
+            [],
+            Sound.Oscillator,
+          ),
         });
 
         this.addRhythm(r2);
@@ -274,6 +289,12 @@ export class Conductor extends Emitter<CondcutorEvents> {
     this.rhythms = [];
   }
 
+  updateSounds(sounds: Sound[], index: number): void {
+    if (this.rhythms[index]) {
+      this.rhythms[index].sounds = sounds;
+    }
+  }
+
   removeRhythm(index: number) {
     if (this.rhythms[index]) {
       this.rhythms = [
@@ -284,7 +305,11 @@ export class Conductor extends Emitter<CondcutorEvents> {
   }
 
   async start(): Promise<boolean> {
-    await this.audioCtx.resume();
+    try {
+      await this.audioCtx.resume();
+    } catch (err) {
+      console.log(this.audioCtx, err);
+    }
     // await this.audioElement.play();
 
     for (const rhythm of this.rhythms) {

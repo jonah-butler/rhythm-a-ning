@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { DropdownOptions } from '../components/Dropdown';
 import { type RhythmBlock } from '../context/BuilderContext.types';
 import { beatCountData, subdivisionData } from '../data';
+import { Sound } from '../timing_engine/oscillator.types';
 import { type BeatState } from '../timing_engine/rhythm.types';
 import { Subdivisions } from '../timing_engine/types';
 
@@ -32,6 +33,21 @@ export const getBeatState = (
   }
 
   return new Array(beats / subdivision).fill(1);
+};
+
+export const getBeatSoundState = (
+  beats: number,
+  previousSounds: Sound[],
+  defaultSound?: Sound,
+): Sound[] => {
+  const newSounds = new Array(beats).fill(defaultSound ?? Sound.HiHat);
+  for (let i = 0; i < beats; i++) {
+    if (previousSounds[i] !== undefined) {
+      newSounds[i] = previousSounds[i];
+    }
+  }
+
+  return newSounds;
 };
 
 export const sanitizeOption = (option: DropdownOptions) => {

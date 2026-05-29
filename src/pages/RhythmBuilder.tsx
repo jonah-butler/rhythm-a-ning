@@ -24,6 +24,7 @@ import { useRhythmBuilderContext } from '../context/useBuilderContext';
 import { useIndexedDBContext } from '../context/useIndexedDBContext';
 import '../css/RhythmBuilder.css';
 import { generateUUID } from '../services/rhythm.services';
+import { loadSounds } from '../services/sound.services';
 import { Conductor } from '../timing_engine/conductor';
 import { type WorkflowEmit } from '../timing_engine/conductor.types';
 
@@ -98,11 +99,18 @@ export default function RhythmBuilder() {
   };
 
   const conductor = useRef<Conductor | null>(null);
+  const audioCtx = useRef<AudioContext | null>(null);
+
   const [activeWorkflow, setActiveWorkflow] = useState<WorkflowEmit | null>(
     null,
   );
 
   useEffect(() => {
+    if (!audioCtx.current) {
+      audioCtx.current = new AudioContext();
+      loadSounds(audioCtx.current);
+    }
+
     return () => {
       if (conductor.current) {
         conductor.current.stop();
@@ -119,16 +127,21 @@ export default function RhythmBuilder() {
         setActiveWorkflow(null);
       }
     } else {
+      setActiveWorkflow(null);
       setCardAudioId(null);
-      const audioCtx = new AudioContext();
+      if (!audioCtx.current) return;
+
       conductor.current = new Conductor({
-        audioCtx,
+        audioCtx: audioCtx.current,
         bpm: rhythmWorkflow.blocks[0].bpm,
         workflow: rhythmWorkflow.blocks,
       });
 
-      conductor.current.initialize();
-      conductor.current.start();
+      requestAnimationFrame(() => {
+        if (!conductor.current) return;
+        conductor.current.initialize();
+        conductor.current.start();
+      });
 
       conductor.current.on('workflowBlock', (workflow: WorkflowEmit) => {
         setActiveWorkflow(workflow);
@@ -144,17 +157,40 @@ export default function RhythmBuilder() {
   };
 
   const updateGlobalPlayback = (id: string, isPlayingState: boolean) => {
+    const block = rhythmWorkflow.blocks.find((block) => block.id === id);
+    const index = rhythmWorkflow.blocks.findIndex((block) => block.id === id);
     // card is playing audio, so kill global audio if running
     if (isPlayingState) {
       if (conductor.current && isPlaying) {
+        console.log('yeah 2');
         conductor.current.stop();
         conductor.current.removeAllListeners();
         setIsPlaying(false);
-        setActiveWorkflow(null);
       }
-      setCardAudioId(id);
+      if (block) {
+        // global audio is playing
+        // and the card currently active
+        // in global context is playing is pressed
+        if (activeWorkflow?.id === id) {
+          console.log('yeahhh');
+          setCardAudioId(null);
+          setActiveWorkflow(null);
+        }
+
+        requestAnimationFrame(() => {
+          setCardAudioId(id);
+          setActiveWorkflow({
+            id,
+            index,
+            bpm: block.bpm,
+            measures: block.measures,
+            beats: +block.beats.value,
+          });
+        });
+      }
     } else {
       setCardAudioId(null);
+      setActiveWorkflow(null);
     }
   };
 
@@ -272,6 +308,7 @@ export default function RhythmBuilder() {
                   showDelete={i !== 0}
                   index={i}
                   cardAudioId={cardAudioId}
+                  audioCtx={audioCtx.current}
                 />
               ))}
             </SortableContext>

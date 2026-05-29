@@ -1,5 +1,6 @@
 import { subdivisionData } from '../data';
 import { getBeatState } from '../services/rhythm.services';
+import { Sound } from '../timing_engine/oscillator.types';
 import { type BeatState } from '../timing_engine/rhythm.types';
 
 type QueryValidation = {
@@ -7,10 +8,19 @@ type QueryValidation = {
   baseCount: number;
   baseSubdivion: number;
   beatState: BeatState[];
+  beatSounds: Sound[];
   usePoly: boolean;
   polyCount: number;
   polySubdivision: number;
   polyBeatState: BeatState[];
+  polyBeatSound: Sound[];
+};
+
+export const isMobileUserAgent = (): boolean => {
+  const userAgent = navigator.userAgent;
+  return /android|ipad|iphone|ipod|blackberry|webos|iemobile|mobile/i.test(
+    userAgent,
+  );
 };
 
 export const parseMetronomeQueryParams = (query: string): QueryValidation => {
@@ -62,6 +72,13 @@ export const parseMetronomeQueryParams = (query: string): QueryValidation => {
       validation.beatState = referenceState;
     }
 
+    const baseSounds = params.get('bsst');
+    if (baseSounds && Number.isInteger(+baseSounds)) {
+      validation.beatSounds = baseSounds
+        .split('')
+        .map((num) => +num) as Sound[];
+    }
+
     const usePoly = params.get('p');
     if (usePoly && Number.isInteger(+usePoly) && +usePoly === 1) {
       validation.usePoly = true;
@@ -97,6 +114,13 @@ export const parseMetronomeQueryParams = (query: string): QueryValidation => {
       );
     } else {
       validation.polyBeatState = referencePolyState;
+    }
+
+    const polyBaseSounds = params.get('bpsst');
+    if (polyBaseSounds && Number.isInteger(+polyBaseSounds)) {
+      validation.polyBeatSound = polyBaseSounds
+        .split('')
+        .map((num) => +num) as Sound[];
     }
 
     return validation;

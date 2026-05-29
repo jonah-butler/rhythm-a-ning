@@ -85,7 +85,7 @@ button:not(.outline):hover {
 
 button:active,
 button:focus-visible {
-  outline: 4px auto var(--pink-purple);
+  outline: 4px solid var(--pink-purple);
 }
 
 hr {

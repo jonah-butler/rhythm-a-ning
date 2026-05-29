@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import '../css/Display.css';
+import { Sound } from '../timing_engine/oscillator.types';
 import type { BeatState } from '../timing_engine/rhythm.types';
 import BPMGrid from './BPM-Grid';
 import BPMSpinner from './BPM-Spinner';
@@ -21,9 +22,13 @@ interface DisplayProps {
   polySubdivisionIcon: ReactNode;
   beatCountGhost: number | null;
   polyBeatCountGhost: number | null;
+  beatSounds: Sound[];
+  polyBeatSounds: Sound[];
   updateBPM: (value: number) => void;
   togglePlayback: () => void;
   handleBeatClick: (i: number) => void;
+  handleSoundSelection: (sound: Sound, index: number) => void;
+  handlePolySoundSelection: (sound: Sound, index: number) => void;
   handlePolyBeatClick: (i: number) => void;
 }
 
@@ -47,6 +52,10 @@ function Display({
   polySubdivisionIcon,
   beatCountGhost,
   polyBeatCountGhost,
+  beatSounds,
+  polyBeatSounds,
+  handleSoundSelection,
+  handlePolySoundSelection,
 }: DisplayProps) {
   return (
     <div className="metronome">
@@ -59,6 +68,8 @@ function Display({
           totalBeats={totalBeats}
           handleBeatClick={(i: number) => handleBeatClick(i)}
           beatCountGhost={beatCountGhost}
+          beatSounds={beatSounds}
+          handleSoundSelection={handleSoundSelection}
         />
 
         {/*  BPM Rotary Dial | Play/Pause | BPM Tap */}
@@ -81,7 +92,9 @@ function Display({
             subdivision={polySubdivision}
             totalBeats={totalPolyBeats}
             beatCountGhost={polyBeatCountGhost}
+            beatSounds={polyBeatSounds}
             handleBeatClick={(i: number) => handlePolyBeatClick(i)}
+            handleSoundSelection={handlePolySoundSelection}
           />
         )}
 

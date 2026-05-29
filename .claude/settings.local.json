@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sudo chown -R jonahbutler /usr/local/share/man/man8)",
+      "Bash(chmod u+w /usr/local/share/man/man8)",
+      "Bash(brew install *)"
+    ]
+  }
+}

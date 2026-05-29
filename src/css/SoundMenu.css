@@ -1,0 +1,71 @@
+.sound-menu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.sound-menu__item {
+  --angle: 0deg;
+  --radius: 30px;
+  --i: 0;
+  position: absolute;
+  padding: 3px;
+  top: 50%;
+  left: 50%;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: var(--light-black);
+  border: 1.5px solid var(--muted-light-purple);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+  cursor: pointer;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  transition:
+    transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.18s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+  transition-delay: calc(var(--i) * 0.035s);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.sound-menu.open .sound-menu__item {
+  transform: translate(
+      calc(-50% + var(--radius) * cos(var(--angle))),
+      calc(-50% + var(--radius) * sin(var(--angle)))
+    )
+    scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sound-menu.open .sound-menu__item.rotate {
+  transform: translate(
+      calc(-50% + var(--radius) * cos(var(--angle))),
+      calc(-50% + var(--radius) * sin(var(--angle)))
+    )
+    scale(1) rotate(90deg) !important;
+}
+
+.sound-menu__item.active {
+  background: var(--light-purple);
+  border-color: var(--white);
+  color: var(--white);
+}
+
+.sound-menu__item:hover {
+  border-color: var(--pink-purple);
+  color: var(--white);
+}

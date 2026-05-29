@@ -1,4 +1,4 @@
-import { type NotePlayer } from './oscillator.types';
+import { type NotePlayer, Sound } from './oscillator.types';
 
 export type RhythmParams = {
   beats: number;
@@ -6,6 +6,7 @@ export type RhythmParams = {
   sound: NotePlayer;
   state: BeatState[];
   poly?: number;
+  sounds: Sound[];
 };
 
 export type BeatState = 0 | 1;

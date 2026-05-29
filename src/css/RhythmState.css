@@ -1,12 +1,33 @@
+.rhythm-state {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: center;
+}
+
 .beat-row {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   gap: 0.25rem;
-  height: fit-content;
-  align-items: center;
-  width: 100%;
+
+  &.sm {
+    width: 4rem;
+  }
+  &.md {
+    width: 8rem;
+  }
+  &.lg {
+    width: 15rem;
+  }
+}
+
+.beat-note {
+  position: relative;
+  cursor: pointer;
 
   span.beat {
+    display: block;
     background-color: var(--muted-pink-purple);
     border-radius: 0.5rem;
     width: 100%;
@@ -24,5 +45,31 @@
   }
   span.beat.subdivided {
     background-color: var(--muted-light-purple);
+  }
+
+  .sound-menu-trigger {
+    position: absolute;
+    right: -6px;
+    top: -6px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--muted-light-purple);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &::after {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--white);
+    }
   }
 }

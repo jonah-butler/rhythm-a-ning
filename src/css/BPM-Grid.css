@@ -71,6 +71,11 @@
 .dot:hover,
 .grid-container.small > .dot.active:hover {
   cursor: pointer;
+  z-index: 20;
+}
+
+.dot.menu-open {
+  z-index: 20;
 }
 .grid-container.ghost > .dot.subdivision {
   top: 48%;

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 import '../App.css';
 import BeatGridSettings from '../assets/icons/beat-grid-settings.svg?react';
 import LibrarySettings from '../assets/icons/folder.svg?react';
@@ -8,21 +8,28 @@ import ShareIcon from '../assets/icons/share.svg?react';
 import SoundSettings from '../assets/icons/sound-settings.svg?react';
 import Display from '../components/Display';
 import Dropdown, { type DropdownOptions } from '../components/Dropdown';
+import RhythmState from '../components/RhythmState';
 import Slider from '../components/Slider';
 import { Tabs } from '../components/Tabs/Tabs';
 import Toggle from '../components/Toggle';
 import { beatCountData, subdivisionData } from '../data';
-import { parseMetronomeQueryParams } from '../helpers/metronome.helpers';
+import {
+  isMobileUserAgent,
+  parseMetronomeQueryParams,
+} from '../helpers/metronome.helpers';
 import {
   getBeatCount,
+  getBeatSoundState,
   getBeatState,
   getSubdivision,
   Rhythms,
   RhythmsData,
 } from '../services/rhythm.services';
+import { loadSounds } from '../services/sound.services';
 import { releaseWakeLock, requestWakeLock } from '../services/wakelock';
 import { Conductor } from '../timing_engine/conductor';
 import { Oscillator } from '../timing_engine/oscillator';
+import { PlayerType, Sound } from '../timing_engine/oscillator.types';
 import { Rhythm } from '../timing_engine/rhythm';
 import { type BeatState } from '../timing_engine/rhythm.types';
 import { Subdivisions } from '../timing_engine/types';
@@ -54,13 +61,6 @@ export default function Metronome() {
    * ++++++++++++++++++++
    */
   const conductor = useRef<Conductor | null>(null);
-
-  const initializeConductor = (): Conductor => {
-    const audioCtx = new AudioContext();
-    const conductor = new Conductor({ audioCtx, bpm: defaultBpm });
-
-    return conductor;
-  };
 
   /**
    * +++++++++++++++++
@@ -95,13 +95,20 @@ export default function Metronome() {
 
   const defaultBeats = parsedDefaults.beatState
     ? parsedDefaults.beatState
-    : new Array(
+    : (new Array(
         parseInt(beatCount.value) /
           Subdivisions[subdivision.value as keyof typeof Subdivisions],
-      ).fill(1);
+      ).fill(1) as BeatState[]);
 
+  //beat state
   const [totalBeats, setTotalBeats] = useState<BeatState[]>(defaultBeats);
   const totalBeatsRef = useRef<BeatState[]>(defaultBeats);
+
+  //beat sound state
+  const defaultBeatSounds = parsedDefaults.beatSounds
+    ? parsedDefaults.beatSounds
+    : (new Array(defaultBeats.length).fill(Sound.Oscillator) as Sound[]);
+  const [beatSounds, setBeatSounds] = useState<Sound[]>(defaultBeatSounds);
 
   /**
    * +++++++++++++++++
@@ -138,6 +145,14 @@ export default function Metronome() {
   const [totalPolyBeats, setTotalPolyBeats] =
     useState<BeatState[]>(defaultPolyBeats);
   const totalPolyBeatsRef = useRef<BeatState[]>(defaultPolyBeats);
+
+  //beat sound state
+  const defaultPolyBeatSounds = parsedDefaults.polyBeatSound
+    ? parsedDefaults.polyBeatSound
+    : (new Array(defaultPolyBeats.length).fill(Sound.HiHat) as Sound[]);
+  const [polyBeatSounds, setPolyBeatSounds] = useState<Sound[]>(
+    defaultPolyBeatSounds,
+  );
   /**
    * ++++++++++
    * App State
@@ -148,6 +163,9 @@ export default function Metronome() {
   );
   const [selectedSetting, setSelectedSetting] = useState('metronome');
   const [tab, setTab] = useState(0);
+  const [primaryBeatState, setPrimaryBeatState] = useState(false);
+  const [polyBeatState, setPolyBeatState] = useState(false);
+
   // const [polyTab, setPolyTab] = useState(0);
   // const [usePolyrhythmTrainer, setUsePolyrhythmTrainer] = useState(false);
 
@@ -183,6 +201,13 @@ export default function Metronome() {
    * +++++++++++++++
    */
   useEffect(() => {
+    const initializeConductor = (): Conductor => {
+      const audioCtx = new AudioContext();
+      const conductor = new Conductor({ audioCtx, bpm: defaultBpm });
+      loadSounds(audioCtx); // load and forget
+
+      return conductor;
+    };
     // conductor event callbacks
     const updateIsRunning = (state: boolean) => setIsRunning(state);
     const updateBPM = (newBPM: number) => {
@@ -233,19 +258,22 @@ export default function Metronome() {
       const baseSubdivision = getSubdivision(subdivision.value);
       const baseBeatCount = parseInt(beatCount.value);
       const baseBeatState = totalBeatsRef.current;
-      const baseSound = new Oscillator(
-        conductor.current.audioCtx,
-        frequencyData.frequency,
-        frequencyData.beatOneOffset,
-        frequencyData.subdividedOffset,
-        frequencyData.gain,
-      );
+      const baseSound = new Oscillator({
+        audioCtx: conductor.current.audioCtx,
+        frequency: frequencyData.frequency,
+        beatOneOffset: frequencyData.beatOneOffset,
+        subdividedOffset: frequencyData.subdividedOffset,
+        gain: frequencyData.gain,
+        type: PlayerType.Sound,
+        sound: Sound.Kick,
+      });
 
       const baseRhythm = new Rhythm({
         subdivision: baseSubdivision,
         beats: baseBeatCount,
         state: baseBeatState,
         sound: baseSound,
+        sounds: beatSounds,
       });
 
       // // handle new rhythms when poly rhythm
@@ -290,13 +318,15 @@ export default function Metronome() {
         return newBeatState;
       };
 
-      const polySound = new Oscillator(
-        conductor.current.audioCtx,
-        polyFrequencyData.frequency,
-        polyFrequencyData.beatOneOffset,
-        polyFrequencyData.subdividedOffset,
-        polyFrequencyData.gain,
-      );
+      const polySound = new Oscillator({
+        audioCtx: conductor.current.audioCtx,
+        frequency: polyFrequencyData.frequency,
+        beatOneOffset: polyFrequencyData.beatOneOffset,
+        subdividedOffset: polyFrequencyData.subdividedOffset,
+        gain: polyFrequencyData.gain,
+        type: PlayerType.Oscillator,
+        sound: null,
+      });
       const polySub = getSubdivision(polySubdivision.value);
       const polyState = totalPolyBeatsRef.current;
       const polyBeat = parseInt(beatCount.value);
@@ -308,6 +338,7 @@ export default function Metronome() {
         beats: polyBeat,
         poly: polyTotalBeats,
         state: polyState,
+        sounds: polyBeatSounds,
       });
 
       // handle new rhythms when base rhythm
@@ -343,6 +374,9 @@ export default function Metronome() {
     polyBeatCount,
     polyFrequencyData,
     polySubdivision,
+    defaultBpm,
+    beatSounds,
+    polyBeatSounds,
   ]);
 
   // cleanup only
@@ -381,15 +415,19 @@ export default function Metronome() {
       newSubdivision.value,
     );
 
+    const newSounds = getBeatSoundState(newBeatState.length, beatSounds);
+
     if (conductor.current) {
       const rhythm = conductor.current.getRhythm(0);
       rhythm.resetState(newBeatState); // updates rhythm state
       rhythm.setSubdivision(getSubdivision(newSubdivision.value));
+      rhythm.updateSounds(newSounds);
     }
 
     totalBeatsRef.current = newBeatState; // used in useEffect
     setTotalBeats(newBeatState); // updates UI
     setSubdivision(newSubdivision);
+    setBeatSounds(newSounds);
     subdivisionRef.current = newSubdivision;
   }
 
@@ -402,15 +440,19 @@ export default function Metronome() {
       newSubdivision.value,
     );
 
+    const newSounds = getBeatSoundState(newBeatState.length, polyBeatSounds);
+
     if (conductor.current) {
       const rhythm = conductor.current.getRhythm(1);
       rhythm.resetState(newBeatState); // updates rhythm state
       rhythm.setSubdivision(getSubdivision(newSubdivision.value));
+      rhythm.updateSounds(newSounds);
     }
 
     totalPolyBeatsRef.current = newBeatState; // used in useEffect
     setTotalPolyBeats(newBeatState); // updates UI
     setPolySubdivision(newSubdivision);
+    setPolyBeatSounds(newSounds);
     polySubdivisionRef.current = newSubdivision;
   }
 
@@ -442,6 +484,22 @@ export default function Metronome() {
       baseRhythm.updateFrequencyData(next);
       return next;
     });
+  }
+
+  function updateBeatSounds(sound: Sound, index: number): void {
+    const updatedSounds = beatSounds.map((value, i) =>
+      i === index ? sound : value,
+    );
+    setBeatSounds(updatedSounds);
+    conductor.current?.updateSounds(updatedSounds, 0);
+  }
+
+  function updatePolyBeatSounds(sound: Sound, index: number): void {
+    const updatedSounds = polyBeatSounds.map((value, i) =>
+      i === index ? sound : value,
+    );
+    setPolyBeatSounds(updatedSounds);
+    conductor.current?.updateSounds(updatedSounds, 1);
   }
 
   /**
@@ -477,8 +535,9 @@ export default function Metronome() {
       conductor.current.updateBeats(updatedBeatCount, null);
       const newBeatCount = getBeatCount(parseInt(value));
 
+      const newBeatState = getBeatState(updatedBeatCount, subdivision.value);
+
       if (!isRunning) {
-        const newBeatState = getBeatState(updatedBeatCount, subdivision.value);
         rhythm.resetState(newBeatState);
 
         beatCountRef.current = newBeatCount;
@@ -490,6 +549,10 @@ export default function Metronome() {
           setBeatCountGhost(newBeatCount);
         }
       }
+      // update beat sounds state
+      const newSounds = getBeatSoundState(newBeatState.length, beatSounds);
+      rhythm.updateSounds(newSounds);
+      setBeatSounds(newSounds);
     }
   }
 
@@ -509,13 +572,11 @@ export default function Metronome() {
 
       rhythm.updateBeats(null, updatedBeatCount, isRunning);
       const newBeatCount = getBeatCount(parseInt(value));
-
+      const newBeatState = getBeatState(
+        updatedBeatCount,
+        polySubdivision.value,
+      );
       if (!isRunning) {
-        const newBeatState = getBeatState(
-          updatedBeatCount,
-          polySubdivision.value,
-        );
-
         rhythm.resetState(newBeatState);
 
         setTotalPolyBeats(newBeatState);
@@ -523,6 +584,10 @@ export default function Metronome() {
       } else {
         setPolyBeatCountGhost(newBeatCount);
       }
+      // update poly beat sounds state
+      const newSounds = getBeatSoundState(newBeatState.length, polyBeatSounds);
+      rhythm.updateSounds(newSounds);
+      setPolyBeatSounds(newSounds);
     }
   }
 
@@ -544,11 +609,24 @@ export default function Metronome() {
     }
   }
 
-  function isMobileUserAgent() {
-    const userAgent = navigator.userAgent;
-    return /android|ipad|iphone|ipod|blackberry|webos|iemobile|mobile/i.test(
-      userAgent,
-    );
+  function updateBeatState(state: BeatState[]): void {
+    setTotalBeats(state);
+    if (conductor.current) {
+      const rhythm = conductor.current.getRhythm(0);
+      if (rhythm) {
+        rhythm.overwriteState(state);
+      }
+    }
+  }
+
+  function updatePolyBeatState(state: BeatState[]): void {
+    setTotalPolyBeats(state);
+    if (conductor.current) {
+      const rhythm = conductor.current.getRhythm(1);
+      if (rhythm) {
+        rhythm.overwriteState(state);
+      }
+    }
   }
 
   /**
@@ -662,6 +740,8 @@ export default function Metronome() {
 
     query += `&bst=${totalBeats.join('')}`;
 
+    query += `&bsst=${beatSounds.join('')}`;
+
     if (usePolyrhythm) {
       query += `&p=1`;
 
@@ -676,6 +756,8 @@ export default function Metronome() {
       query += `&ps=${sub}`;
 
       query += `&pbst=${totalPolyBeats.join('')}`;
+
+      query += `&bpsst=${polyBeatSounds.join('')}`;
     }
 
     await navigator.clipboard.writeText(`${url}${btoa(query)}`);
@@ -716,6 +798,10 @@ export default function Metronome() {
               ? parseInt(polyBeatCountGhost.value)
               : polyBeatCountGhost
           }
+          beatSounds={beatSounds}
+          polyBeatSounds={polyBeatSounds}
+          handleSoundSelection={updateBeatSounds}
+          handlePolySoundSelection={updatePolyBeatSounds}
         />
       </section>
       <section className="settings-toggle-row">
@@ -778,6 +864,35 @@ export default function Metronome() {
                 />
               </div>
             </section>
+
+            {/* Rhythm State */}
+            <section className="flex width-100 space-between align-center">
+              <div className="text-light font-size-13 text-left flex-1">
+                state
+              </div>
+              <div className="flex flex-1">
+                <button
+                  onClick={() => setPrimaryBeatState(!primaryBeatState)}
+                  className="filled small full"
+                >
+                  {primaryBeatState ? 'close' : 'modify'}
+                </button>
+              </div>
+            </section>
+
+            {primaryBeatState ? (
+              <section className="flex flex-wrap justify-center width-100 align-center mb-2 f-gap4">
+                <RhythmState
+                  onUpdate={(state) => updateBeatState(state)}
+                  beats={beatCount}
+                  disabled={false}
+                  size="sm"
+                  state={totalBeats}
+                  sounds={beatSounds}
+                  onSoundChange={updateBeatSounds}
+                />
+              </section>
+            ) : null}
 
             {/* use poly rhyhtm */}
             <section className="flex width-100 space-between align-center">
@@ -849,6 +964,37 @@ export default function Metronome() {
                 </div>
               </section>
             )}
+
+            {/* Rhythm State */}
+            {usePolyrhythm && (
+              <section className="flex width-100 space-between align-center">
+                <div className="text-light font-size-13 text-left flex-1">
+                  state
+                </div>
+                <div className="flex flex-1">
+                  <button
+                    onClick={() => setPolyBeatState(!polyBeatState)}
+                    className="filled small full"
+                  >
+                    {polyBeatState ? 'close' : 'modify'}
+                  </button>
+                </div>
+              </section>
+            )}
+
+            {usePolyrhythm && polyBeatState ? (
+              <section className="flex flex-wrap justify-center width-100 align-center mb-2 f-gap4">
+                <RhythmState
+                  onUpdate={(state) => updatePolyBeatState(state)}
+                  beats={polyBeatCount}
+                  disabled={false}
+                  size="sm"
+                  sounds={polyBeatSounds}
+                  state={totalPolyBeats}
+                  onSoundChange={updatePolyBeatSounds}
+                />
+              </section>
+            ) : null}
           </div>
         </Tabs.Tab>
         <Tabs.Tab label={<SoundSettings />}>
@@ -1106,7 +1252,6 @@ export default function Metronome() {
           </button>
         </div>
       </section>
-      <ToastContainer theme="dark" progressClassName="bg-pink-purple" />
     </>
   );
 }

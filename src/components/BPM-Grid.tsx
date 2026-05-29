@@ -1,8 +1,11 @@
 import { type MouseEvent, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import '../css/BPM-Grid.css';
+import { isMobileUserAgent } from '../helpers/metronome.helpers';
 import { getBeatState } from '../services/rhythm.services';
+import { Sound } from '../timing_engine/oscillator.types';
 import type { BeatState } from '../timing_engine/rhythm.types';
+import SoundMenu from './Menus/SoundMenu';
 import { SubdivisionModal } from './Modals/Subdivision-Modal';
 
 interface BPMGridProps {
@@ -12,7 +15,9 @@ interface BPMGridProps {
   subdivision: number;
   totalBeats: BeatState[];
   beatCountGhost: number | null;
+  beatSounds: Sound[];
   handleBeatClick: (index: number) => void;
+  handleSoundSelection: (sound: Sound, index: number) => void;
 }
 
 function BPMGrid({
@@ -23,6 +28,8 @@ function BPMGrid({
   handleBeatClick,
   totalBeats,
   beatCountGhost,
+  beatSounds,
+  handleSoundSelection,
 }: BPMGridProps) {
   function isSubdividedNote(
     beats: number,
@@ -40,6 +47,40 @@ function BPMGrid({
 
   const pressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const [longPress, setLongPress] = useState(false);
+
+  const [menuOpenDot, setMenuOpenDot] = useState<number | null>(null);
+  const menuCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const menuOpenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelMenuClose = () => {
+    if (menuCloseTimer.current) clearTimeout(menuCloseTimer.current);
+  };
+
+  const cancelMenuOpen = () => {
+    if (menuOpenTimer.current) clearTimeout(menuOpenTimer.current);
+  };
+
+  const scheduleMenuClose = () => {
+    cancelMenuClose();
+    menuCloseTimer.current = setTimeout(() => setMenuOpenDot(null), 350);
+  };
+
+  console.log('beat sounds: ', beatSounds);
+
+  const handleDotMouseEnter = (i: number) => {
+    cancelMenuClose();
+    if (menuOpenDot !== null) {
+      setMenuOpenDot(i);
+    } else {
+      cancelMenuOpen();
+      menuOpenTimer.current = setTimeout(() => setMenuOpenDot(i), 350);
+    }
+  };
+
+  const handleDotMouseLeave = () => {
+    cancelMenuOpen();
+    scheduleMenuClose();
+  };
 
   type ModalCoordinates = {
     x: number;
@@ -88,7 +129,10 @@ function BPMGrid({
         <div
           className={`grid-container ghost ${smallVersion ? 'small' : ''}`}
           style={
-            { '--beats': beatCountGhost / subdivision } as React.CSSProperties
+            {
+              '--beats': beatCountGhost / subdivision,
+              'z-index': menuOpenDot !== null ? '6' : '5',
+            } as React.CSSProperties
           }
         >
           {getBeatState(beatCountGhost, subdivision).map((beat, i) => {
@@ -105,18 +149,35 @@ function BPMGrid({
 
       <div
         className={`grid-container ${smallVersion ? 'small' : ''}`}
-        style={{ '--beats': beats / subdivision } as React.CSSProperties}
+        style={
+          {
+            '--beats': beats / subdivision,
+            zIndex: menuOpenDot !== null ? '6' : '5',
+          } as React.CSSProperties
+        }
       >
         {totalBeats.map((beat, i) => {
           return (
             <div
-              className={`dot${isSameBeat(i) ? ' active' : ''} ${isSubdividedNote(beats, i, subdivision) ? 'subdivision' : ''} ${beat === 0 ? 'off' : ''}`}
+              className={`dot${isSameBeat(i) ? ' active' : ''} ${isSubdividedNote(beats, i, subdivision) ? 'subdivision' : ''} ${beat === 0 ? 'off' : ''} ${menuOpenDot === i ? 'menu-open' : ''}`}
               key={i}
               style={{ '--i': i } as React.CSSProperties}
-              // onClick={() => handleBeatClick(i)}
               onMouseDown={(event) => handleMouseDown(i, event)}
               onMouseUp={() => handleMouseUp(i)}
-            ></div>
+              onMouseEnter={() => handleDotMouseEnter(i)}
+              onMouseLeave={handleDotMouseLeave}
+            >
+              {!isMobileUserAgent() ? (
+                <SoundMenu
+                  isOpen={menuOpenDot === i}
+                  onKeepOpen={cancelMenuClose}
+                  onRequestClose={scheduleMenuClose}
+                  activeSound={beatSounds[i]}
+                  rotateMenu={true}
+                  onClick={(sound) => handleSoundSelection(sound, i)}
+                />
+              ) : null}
+            </div>
           );
         })}
         {createPortal(

@@ -11,6 +11,7 @@ import '../../css/RhythmBuilderCard.css';
 import { beatCountData, subdivisionData } from '../../data';
 import { getBeatState, sanitizeOption } from '../../services/rhythm.services';
 import { Conductor } from '../../timing_engine/conductor';
+import { Sound } from '../../timing_engine/oscillator.types';
 import Dropdown from '../Dropdown';
 import NumberInput from '../NumberInput';
 import RhythmState from '../RhythmState';
@@ -21,6 +22,7 @@ type RhythmBuilderCardProps = {
   showDelete?: boolean;
   index: number;
   cardAudioId: string | null;
+  audioCtx: AudioContext | null;
   onChange: () => void;
   onTogglePlayback: (id: string, isPlaying: boolean) => void;
 };
@@ -31,6 +33,7 @@ export default function RhythmBuilderCard({
   index,
   onChange,
   onTogglePlayback,
+  audioCtx,
   cardAudioId,
 }: RhythmBuilderCardProps) {
   const { updateBlock, deleteBlock } = useRhythmBuilderContext();
@@ -131,6 +134,25 @@ export default function RhythmBuilderCard({
 
     onChange();
   };
+
+  const handleSoundChange = (
+    sound: Sound,
+    index: number,
+    isPoly = false,
+  ): void => {
+    const updatedSounds = block.beatSounds.map((value, i) =>
+      i === index ? sound : value,
+    );
+
+    if (isPoly) {
+      updateBlock(block.id, { polyBeatSounds: updatedSounds });
+    } else {
+      updateBlock(block.id, { beatSounds: updatedSounds });
+    }
+
+    onChange();
+  };
+
   const conductor = useRef<Conductor | null>(null);
 
   const togglePlayback = () => {
@@ -139,8 +161,12 @@ export default function RhythmBuilderCard({
         conductor.current.stop();
         conductor.current.removeAllListeners();
       }
+
+      onTogglePlayback(block.id, !isPlaying);
     } else {
-      const audioCtx = new AudioContext();
+      if (!audioCtx) return;
+      onTogglePlayback(block.id, !isPlaying);
+
       conductor.current = new Conductor({
         audioCtx,
         bpm: block.bpm,
@@ -151,7 +177,6 @@ export default function RhythmBuilderCard({
       conductor.current.start();
     }
 
-    onTogglePlayback(block.id, !isPlaying);
     setIsPlaying(!isPlaying);
   };
 
@@ -160,7 +185,7 @@ export default function RhythmBuilderCard({
       ref={setNodeRef}
       {...attributes}
       style={cardStyle}
-      className="rhythm-builder-card"
+      className={`rhythm-builder-card ${isPlaying ? 'active' : ''}`}
     >
       <section className="flex action-row">
         <div className="drag-container">
@@ -263,8 +288,11 @@ export default function RhythmBuilderCard({
             <RhythmState
               onUpdate={(state) => updateBlock(block.id, { state })}
               beats={block.beats}
-              subdivision={block.subdivision}
               disabled={false}
+              state={block.state}
+              size="sm"
+              sounds={block.beatSounds}
+              onSoundChange={(s, i) => handleSoundChange(s, i)}
             />
           </section>
         ) : null}
@@ -337,8 +365,11 @@ export default function RhythmBuilderCard({
             <RhythmState
               onUpdate={(state) => updateBlock(block.id, { polyState: state })}
               beats={block.polyBeats}
-              subdivision={block.polySubdivision}
               disabled={!block.usePoly}
+              state={block.polyState}
+              size="sm"
+              sounds={block.polyBeatSounds}
+              onSoundChange={(s, i) => handleSoundChange(s, i, true)}
             />
           </section>
         ) : null}

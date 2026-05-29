@@ -18,6 +18,13 @@
   box-shadow: 0px 0px 20px 1px rgba(248, 33, 173, 0.35);
 }
 
+.rhythm-builder-card.active {
+  border: 1px solid var(--pink-purple);
+  cursor: pointer;
+  opacity: 0.9;
+  box-shadow: 0px 0px 20px 1px rgba(248, 33, 173, 0.35);
+}
+
 .action-row {
   display: flex;
   justify-content: space-between;

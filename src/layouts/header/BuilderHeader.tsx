@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 import BuilderIcon from '../../assets/icons/builder.svg?react';
 import FolderIcon from '../../assets/icons/folder.svg?react';
 import NoteIcon from '../../assets/icons/note.svg?react';
@@ -252,7 +252,6 @@ export default function BuilderHeader() {
           </Modal.Footer>
         </Modal>
       ) : null}
-      <ToastContainer theme="dark" progressClassName="bg-pink-purple" />
     </section>
   );
 }

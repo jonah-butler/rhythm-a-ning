@@ -29,7 +29,7 @@ textarea {
 
 .metronome__outer-container {
   margin: 0 auto;
-  padding-top: 2rem;
+  padding-top: 4rem;
 }
 
 .logo {
@@ -106,7 +106,7 @@ svg.note-svg path {
 }
 
 button.active {
-  outline: 2px auto #f821ad;
+  outline: 2px solid #f821ad;
 }
 
 button.inactive {
@@ -179,6 +179,10 @@ button.sm-padding {
 */
 .flex {
   display: flex;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
 }
 
 .flex-1 {

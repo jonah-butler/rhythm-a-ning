@@ -1,5 +1,5 @@
 import { Emitter } from '../services/emit';
-import { type FrequencyData, type NotePlayer } from './oscillator.types';
+import { type FrequencyData, type NotePlayer, Sound } from './oscillator.types';
 import type { BeatState, RhythmEvents, RhythmParams } from './rhythm.types';
 
 type BeatChanges = {
@@ -15,7 +15,7 @@ type BeatChanges = {
 export class Rhythm extends Emitter<RhythmEvents> {
   killed = true;
   step: number = 0;
-  activeOscillators: OscillatorNode[] = [];
+  activeOscillators: (OscillatorNode | AudioBufferSourceNode)[] = [];
   pendingSubdivision: number | null = null;
   pendingBeatChange: number | null = null;
   pendingPolyBeatChange: number | null = null;
@@ -34,8 +34,16 @@ export class Rhythm extends Emitter<RhythmEvents> {
   beatTrack: number; // tracks total num of beats - for UI
   subdivision: number; // current subdivision
   state: BeatState[]; // current BeatState for determining if a note should be played or not
+  sounds: Sound[];
 
-  constructor({ beats, subdivision, sound, poly, state }: RhythmParams) {
+  constructor({
+    beats,
+    subdivision,
+    sound,
+    poly,
+    state,
+    sounds,
+  }: RhythmParams) {
     super();
     this.beats = beats;
     this.subdivision = subdivision;
@@ -44,6 +52,7 @@ export class Rhythm extends Emitter<RhythmEvents> {
     this.beatTrack = 1;
     this.state = state;
     this.isPolyrhythm = this.beats !== this.poly;
+    this.sounds = sounds;
   }
 
   private toTicksPerBeat(sub: number): number {
@@ -231,15 +240,27 @@ export class Rhythm extends Emitter<RhythmEvents> {
         this.nextNote,
         this.isBeatOne,
         this.isSubdividedNote,
+        this.sounds[this.currentBeat - 1],
         // gainNode,
       );
 
-      this.activeOscillators.push(osc);
+      if (osc) {
+        this.activeOscillators.push(osc); // type safety
+      }
 
-      osc.onended = (): void => {
+      const delay = (this.nextNote - (osc?.context?.currentTime ?? 0)) * 1000;
+      setTimeout(() => {
         if (!this.killed) {
           this.emit('beatChange', tempBeat);
         }
+      }, delay);
+
+      if (!osc) return;
+
+      osc.onended = (): void => {
+        // if (!this.killed) {
+        //   this.emit('beatChange', tempBeat);
+        // }
 
         this.activeOscillators = this.activeOscillators.filter(
           (o) => o !== osc,
@@ -266,6 +287,10 @@ export class Rhythm extends Emitter<RhythmEvents> {
 
   updateState(index: number, state: BeatState): void {
     this.state[index] = state;
+  }
+
+  overwriteState(state: BeatState[]): void {
+    this.state = state;
   }
 
   handleBeatChange(): void {
@@ -313,6 +338,10 @@ export class Rhythm extends Emitter<RhythmEvents> {
     if (!isRunning) {
       this.handleBeatChange();
     }
+  }
+
+  updateSounds(sounds: Sound[]): void {
+    this.sounds = sounds;
   }
 
   resetState(state: BeatState[]): void {

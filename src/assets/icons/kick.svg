@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" fill="currentColor" role="img" aria-label="Kick drum">
+  <path fill-rule="evenodd" d="M24 7 A17 17 0 1 0 24 41 A17 17 0 1 0 24 7 Z M24 11 A13 13 0 1 1 24 37 A13 13 0 1 1 24 11 Z"/>
+  <path fill-rule="evenodd" d="M24 18 A6 6 0 1 0 24 30 A6 6 0 1 0 24 18 Z M24 21.2 A2.8 2.8 0 1 1 24 26.8 A2.8 2.8 0 1 1 24 21.2 Z"/>
+  <path d="M13.5 37 L10.5 41.7 L13 43.3 L16 38.6 Z"/>
+  <path d="M34.5 37 L37.5 41.7 L35 43.3 L32 38.6 Z"/>
+</svg>
