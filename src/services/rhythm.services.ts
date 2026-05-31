@@ -35,12 +35,27 @@ export const getBeatState = (
   return new Array(beats / subdivision).fill(1);
 };
 
+// export const getBeatSoundState = (
+//   beats: number,
+//   previousSounds: Sound[],
+//   defaultSound?: Sound,
+// ): Sound[] => {
+//   const newSounds = new Array(beats).fill(defaultSound ?? Sound.HiHat);
+//   for (let i = 0; i < beats; i++) {
+//     if (previousSounds[i] !== undefined) {
+//       newSounds[i] = previousSounds[i];
+//     }
+//   }
+
+//   return newSounds;
+// };
+
 export const getBeatSoundState = (
   beats: number,
-  previousSounds: Sound[],
+  previousSounds: Sound[][],
   defaultSound?: Sound,
-): Sound[] => {
-  const newSounds = new Array(beats).fill(defaultSound ?? Sound.HiHat);
+): Sound[][] => {
+  const newSounds = new Array(beats).fill([defaultSound ?? Sound.HiHat]);
   for (let i = 0; i < beats; i++) {
     if (previousSounds[i] !== undefined) {
       newSounds[i] = previousSounds[i];

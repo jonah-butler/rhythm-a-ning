@@ -9,7 +9,7 @@ type RhythmStateProps = {
   beats: DropdownOptions;
   disabled: boolean;
   size?: 'sm' | 'md' | 'lg';
-  sounds?: Sound[];
+  sounds?: Sound[][];
   state?: BeatState[];
   onUpdate: (state: BeatState[]) => void;
   onSoundChange?: (sound: Sound, index: number) => void;
@@ -28,6 +28,17 @@ export default function RhythmState({
 
   const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const menuCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelMenuClose = () => {
+    if (menuCloseTimer.current) clearTimeout(menuCloseTimer.current);
+  };
+
+  const scheduleMenuClose = () => {
+    cancelMenuClose();
+    menuCloseTimer.current = setTimeout(() => setOpenMenuIndex(null), 350);
+  };
 
   useEffect(() => {
     if (openMenuIndex === null) return;
@@ -106,12 +117,11 @@ export default function RhythmState({
                   />
                   <SoundMenu
                     isOpen={openMenuIndex === flatIndex}
-                    activeSound={sounds[flatIndex]}
-                    onKeepOpen={() => {}}
-                    onRequestClose={() => {}}
+                    activeSounds={sounds[flatIndex]}
+                    onKeepOpen={cancelMenuClose}
+                    onRequestClose={scheduleMenuClose}
                     onClick={(sound) => {
                       onSoundChange(sound, flatIndex);
-                      setOpenMenuIndex(null);
                     }}
                   />
                 </>

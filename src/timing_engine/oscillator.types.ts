@@ -1,9 +1,9 @@
-export interface NotePlayer {
+export interface ISoundPlayer {
   play(
     startTime: number,
     isFirstNote: boolean,
     isSubdividedNote: boolean,
-    sound: Sound,
+    sounds: Sound[],
   ): OscillatorNode | AudioBufferSourceNode | null;
   updateFrequency(frequency: number): void;
   updateFrequencyData(data: FrequencyData): void;

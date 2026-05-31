@@ -18,11 +18,11 @@ export type RhythmBlock = {
   beats: DropdownOptions;
   usePoly: boolean;
   state: BeatState[];
-  beatSounds: Sound[];
+  sounds: Sound[][];
   polyBeats: DropdownOptions;
   polySubdivision: DropdownOptions;
   polyState: BeatState[];
-  polyBeatSounds: Sound[];
+  polySounds: Sound[][];
 };
 
 export type PolyState = {
@@ -39,11 +39,11 @@ export const DefaultRhythmBlock = {
   beats: beatCountData[3],
   usePoly: false,
   state: getBeatState(4, 'base'),
-  beatSounds: getBeatSoundState(4, [], Sound.Oscillator),
+  sounds: getBeatSoundState(4, [], Sound.Oscillator),
   polyBeats: beatCountData[2],
   polySubdivision: sanitizeOption(subdivisionData[0]),
   polyState: getBeatState(3, 'base'),
-  polyBeatSounds: getBeatSoundState(3, [], Sound.Oscillator),
+  polySounds: getBeatSoundState(3, [], Sound.Oscillator),
 };
 
 export const DefaultRhythmWorkflow: RhythmBlockStore = {

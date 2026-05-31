@@ -8,12 +8,12 @@ type QueryValidation = {
   baseCount: number;
   baseSubdivion: number;
   beatState: BeatState[];
-  beatSounds: Sound[];
+  beatSounds: Sound[][];
   usePoly: boolean;
   polyCount: number;
   polySubdivision: number;
   polyBeatState: BeatState[];
-  polyBeatSound: Sound[];
+  polyBeatSound: Sound[][];
 };
 
 export const isMobileUserAgent = (): boolean => {
@@ -73,10 +73,10 @@ export const parseMetronomeQueryParams = (query: string): QueryValidation => {
     }
 
     const baseSounds = params.get('bsst');
-    if (baseSounds && Number.isInteger(+baseSounds)) {
+    if (baseSounds) {
       validation.beatSounds = baseSounds
-        .split('')
-        .map((num) => +num) as Sound[];
+        .split('-')
+        .map((sounds) => sounds.split(',').map((s) => +s));
     }
 
     const usePoly = params.get('p');
@@ -117,10 +117,10 @@ export const parseMetronomeQueryParams = (query: string): QueryValidation => {
     }
 
     const polyBaseSounds = params.get('bpsst');
-    if (polyBaseSounds && Number.isInteger(+polyBaseSounds)) {
-      validation.polyBeatSound = polyBaseSounds
-        .split('')
-        .map((num) => +num) as Sound[];
+    if (polyBaseSounds) {
+      validation.beatSounds = polyBaseSounds
+        .split('-')
+        .map((sounds) => sounds.split(',').map((s) => +s));
     }
 
     return validation;

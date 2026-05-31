@@ -101,16 +101,16 @@ export default function RhythmBuilderCard({
           subdivision.value,
         );
 
-        const polyBeatSounds = getBeatSoundState(
+        const polySounds = getBeatSoundState(
           newState.length,
-          block.polyBeatSounds,
+          block.polySounds,
           Sound.Oscillator,
         );
 
         updateBlock(block.id, {
           polySubdivision: sanitizeOption(subdivision),
           polyState: newState,
-          polyBeatSounds,
+          polySounds,
         });
       }
     } else {
@@ -120,16 +120,16 @@ export default function RhythmBuilderCard({
           subdivision.value,
         );
 
-        const beatSounds = getBeatSoundState(
+        const sounds = getBeatSoundState(
           newState.length,
-          block.beatSounds,
+          block.sounds,
           Sound.Oscillator,
         );
 
         updateBlock(block.id, {
           subdivision: sanitizeOption(subdivision),
           state: newState,
-          beatSounds,
+          sounds,
         });
       }
     }
@@ -145,17 +145,17 @@ export default function RhythmBuilderCard({
         Number(beats?.value),
         block.polySubdivision.value,
       );
-      const polyBeatSounds = getBeatSoundState(
+      const polySounds = getBeatSoundState(
         polyState.length,
-        block.polyBeatSounds,
+        block.polySounds,
         Sound.Oscillator,
       );
-      updateBlock(block.id, { polyBeats: beats, polyState, polyBeatSounds });
+      updateBlock(block.id, { polyBeats: beats, polyState, polySounds });
     } else {
       const state = getBeatState(Number(beats?.value), block.subdivision.value);
-      const beatSounds = getBeatSoundState(state.length, block.beatSounds);
+      const sounds = getBeatSoundState(state.length, block.sounds);
 
-      updateBlock(block.id, { beats, state, beatSounds });
+      updateBlock(block.id, { beats, state, sounds });
     }
 
     onChange();
@@ -166,21 +166,24 @@ export default function RhythmBuilderCard({
     index: number,
     isPoly = false,
   ): void => {
-    let updatedSounds: Sound[] = [] as Sound[];
+    let updatedSounds: Sound[][] = [] as Sound[][];
     if (isPoly) {
-      updatedSounds = block.polyBeatSounds.map((value, i) =>
-        i === index ? sound : value,
-      );
+      updatedSounds = block.polySounds.map((s, i) => {
+        if (i !== index) return s;
+        return s.includes(sound) ? s.filter((v) => v !== sound) : [...s, sound];
+      });
     } else {
-      updatedSounds = block.beatSounds.map((value, i) =>
-        i === index ? sound : value,
-      );
+      updatedSounds = block.sounds.map((s, i) => {
+        if (i !== index) return s;
+        return s.includes(sound) ? s.filter((v) => v !== sound) : [...s, sound];
+      });
     }
+    if (updatedSounds[index].length === 0) updatedSounds[index].push(sound);
 
     if (isPoly) {
-      updateBlock(block.id, { polyBeatSounds: updatedSounds });
+      updateBlock(block.id, { polySounds: updatedSounds });
     } else {
-      updateBlock(block.id, { beatSounds: updatedSounds });
+      updateBlock(block.id, { sounds: updatedSounds });
     }
 
     onChange();
@@ -324,7 +327,7 @@ export default function RhythmBuilderCard({
               disabled={false}
               state={block.state}
               size="sm"
-              sounds={block.beatSounds}
+              sounds={block.sounds}
               onSoundChange={(s, i) => handleSoundChange(s, i)}
             />
           </section>
@@ -401,7 +404,7 @@ export default function RhythmBuilderCard({
               disabled={!block.usePoly}
               state={block.polyState}
               size="sm"
-              sounds={block.polyBeatSounds}
+              sounds={block.polySounds}
               onSoundChange={(s, i) => handleSoundChange(s, i, true)}
             />
           </section>

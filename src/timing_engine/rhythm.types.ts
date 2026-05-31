@@ -1,12 +1,12 @@
-import { type NotePlayer, Sound } from './oscillator.types';
+import { type ISoundPlayer, Sound } from './oscillator.types';
 
 export type RhythmParams = {
   beats: number;
   subdivision: number;
-  sound: NotePlayer;
+  sound: ISoundPlayer;
   state: BeatState[];
   poly?: number;
-  sounds: Sound[];
+  sounds: Sound[][];
 };
 
 export type BeatState = 0 | 1;

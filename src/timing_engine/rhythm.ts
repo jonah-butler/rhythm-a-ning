@@ -1,5 +1,9 @@
 import { Emitter } from '../services/emit';
-import { type FrequencyData, type NotePlayer, Sound } from './oscillator.types';
+import {
+  type FrequencyData,
+  type ISoundPlayer,
+  Sound,
+} from './oscillator.types';
 import type { BeatState, RhythmEvents, RhythmParams } from './rhythm.types';
 
 type BeatChanges = {
@@ -29,12 +33,12 @@ export class Rhythm extends Emitter<RhythmEvents> {
 
   poly: number; // optional poly beats defaults to [beats] value if undefined
   beats: number; // num of beats in a measure
-  sound: NotePlayer; // instanceof NotePlayer(osciallator)
+  sound: ISoundPlayer; // instanceof NotePlayer(osciallator)
   nextNote = 0; // the look ahead in absolute time in relation to the atomic clock
   beatTrack: number; // tracks total num of beats - for UI
   subdivision: number; // current subdivision
   state: BeatState[]; // current BeatState for determining if a note should be played or not
-  sounds: Sound[];
+  sounds: Sound[][];
 
   constructor({
     beats,
@@ -341,7 +345,7 @@ export class Rhythm extends Emitter<RhythmEvents> {
     }
   }
 
-  updateSounds(sounds: Sound[]): void {
+  updateSounds(sounds: Sound[][]): void {
     this.sounds = sounds;
   }
 

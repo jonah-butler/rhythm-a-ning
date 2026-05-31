@@ -2,14 +2,13 @@ import { getSoundMap } from '../services/sound.services';
 
 import {
   type FrequencyData,
-  type NotePlayer,
+  type ISoundPlayer,
   type OscillatorParams,
   PlayerType,
   Sound,
 } from './oscillator.types';
 
-// just name it as note player or something more generic
-export class Oscillator implements NotePlayer {
+export class SoundPlayer implements ISoundPlayer {
   private static soundMap = getSoundMap();
 
   audioCtx: AudioContext;
@@ -42,15 +41,23 @@ export class Oscillator implements NotePlayer {
     startTime: number,
     isFirstNote: boolean,
     isSubdividedNote: boolean,
-    sound: Sound,
+    sounds: Sound[],
   ): OscillatorNode | AudioBufferSourceNode | null {
-    let node: OscillatorNode | AudioBufferSourceNode | null;
-    switch (sound) {
-      case Sound.Oscillator:
-        node = this.playOscillator(startTime, isFirstNote, isSubdividedNote);
-        break;
-      default:
-        node = this.playSound(startTime, isFirstNote, isSubdividedNote, sound);
+    let node: OscillatorNode | AudioBufferSourceNode | null = null;
+
+    for (const sound of sounds) {
+      switch (sound) {
+        case Sound.Oscillator:
+          node = this.playOscillator(startTime, isFirstNote, isSubdividedNote);
+          break;
+        default:
+          node = this.playSound(
+            startTime,
+            isFirstNote,
+            isSubdividedNote,
+            sound,
+          );
+      }
     }
 
     return node;
@@ -63,13 +70,13 @@ export class Oscillator implements NotePlayer {
     sound: Sound,
   ): AudioBufferSourceNode | null {
     if (sound === null) return null;
-    const buffer = Oscillator.soundMap[sound];
+    const buffer = SoundPlayer.soundMap[sound];
     if (!buffer) return null; // still loading
 
     const source = this.audioCtx.createBufferSource();
     const gain = this.audioCtx.createGain();
 
-    source.buffer = Oscillator.soundMap[sound];
+    source.buffer = SoundPlayer.soundMap[sound];
 
     // Pitch-shift via playbackRate instead of osc frequency
     let freq = this.frequency;

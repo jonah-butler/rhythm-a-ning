@@ -23,7 +23,7 @@ const SOUNDS: SoundSelection[] = [
 
 interface SoundMenuProps {
   isOpen: boolean;
-  activeSound: Sound;
+  activeSounds: Sound[];
   rotateMenu?: boolean;
   onKeepOpen: () => void;
   onRequestClose: () => void;
@@ -34,7 +34,7 @@ function SoundMenu({
   isOpen,
   onKeepOpen,
   onRequestClose,
-  activeSound,
+  activeSounds,
   onClick,
   rotateMenu = false,
 }: SoundMenuProps) {
@@ -43,7 +43,7 @@ function SoundMenu({
       {SOUNDS.map((sound, i) => (
         <button
           key={sound.id}
-          className={`sound-menu__item${sound.value === activeSound ? ' active' : ''} ${rotateMenu ? ' rotate' : ''}`}
+          className={`sound-menu__item${activeSounds.includes(sound.value) ? ' active' : ''} ${rotateMenu ? ' rotate' : ''}`}
           style={
             {
               '--angle': `${(360 / SOUNDS.length) * i - 90}deg`,

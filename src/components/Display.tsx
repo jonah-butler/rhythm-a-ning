@@ -22,8 +22,8 @@ interface DisplayProps {
   polySubdivisionIcon: ReactNode;
   beatCountGhost: number | null;
   polyBeatCountGhost: number | null;
-  beatSounds: Sound[];
-  polyBeatSounds: Sound[];
+  beatSounds: Sound[][];
+  polyBeatSounds: Sound[][];
   updateBPM: (value: number) => void;
   togglePlayback: () => void;
   handleBeatClick: (i: number) => void;

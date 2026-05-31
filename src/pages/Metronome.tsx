@@ -12,6 +12,7 @@ import RhythmState from '../components/RhythmState';
 import Slider from '../components/Slider';
 import { Tabs } from '../components/Tabs/Tabs';
 import Toggle from '../components/Toggle';
+import type { RhythmBlock } from '../context/BuilderContext.types';
 import { beatCountData, subdivisionData } from '../data';
 import {
   isMobileUserAgent,
@@ -28,7 +29,7 @@ import {
 import { loadSounds } from '../services/sound.services';
 import { releaseWakeLock, requestWakeLock } from '../services/wakelock';
 import { Conductor } from '../timing_engine/conductor';
-import { Oscillator } from '../timing_engine/oscillator';
+import { SoundPlayer } from '../timing_engine/oscillator';
 import { PlayerType, Sound } from '../timing_engine/oscillator.types';
 import { Rhythm } from '../timing_engine/rhythm';
 import { type BeatState } from '../timing_engine/rhythm.types';
@@ -107,8 +108,8 @@ export default function Metronome() {
   //beat sound state
   const defaultBeatSounds = parsedDefaults.beatSounds
     ? parsedDefaults.beatSounds
-    : (new Array(defaultBeats.length).fill(Sound.Oscillator) as Sound[]);
-  const [beatSounds, setBeatSounds] = useState<Sound[]>(defaultBeatSounds);
+    : (new Array(defaultBeats.length).fill([Sound.Oscillator]) as Sound[][]);
+  const [sounds, setSounds] = useState<Sound[][]>(defaultBeatSounds);
 
   /**
    * +++++++++++++++++
@@ -149,8 +150,8 @@ export default function Metronome() {
   //beat sound state
   const defaultPolyBeatSounds = parsedDefaults.polyBeatSound
     ? parsedDefaults.polyBeatSound
-    : (new Array(defaultPolyBeats.length).fill(Sound.HiHat) as Sound[]);
-  const [polyBeatSounds, setPolyBeatSounds] = useState<Sound[]>(
+    : (new Array(defaultPolyBeats.length).fill([Sound.HiHat]) as Sound[][]);
+  const [polySounds, setPolySounds] = useState<Sound[][]>(
     defaultPolyBeatSounds,
   );
   /**
@@ -258,7 +259,7 @@ export default function Metronome() {
       const baseSubdivision = getSubdivision(subdivision.value);
       const baseBeatCount = parseInt(beatCount.value);
       const baseBeatState = totalBeatsRef.current;
-      const baseSound = new Oscillator({
+      const baseSound = new SoundPlayer({
         audioCtx: conductor.current.audioCtx,
         frequency: frequencyData.frequency,
         beatOneOffset: frequencyData.beatOneOffset,
@@ -273,7 +274,7 @@ export default function Metronome() {
         beats: baseBeatCount,
         state: baseBeatState,
         sound: baseSound,
-        sounds: beatSounds,
+        sounds,
       });
 
       // // handle new rhythms when poly rhythm
@@ -318,7 +319,7 @@ export default function Metronome() {
         return newBeatState;
       };
 
-      const polySound = new Oscillator({
+      const polySound = new SoundPlayer({
         audioCtx: conductor.current.audioCtx,
         frequency: polyFrequencyData.frequency,
         beatOneOffset: polyFrequencyData.beatOneOffset,
@@ -338,7 +339,7 @@ export default function Metronome() {
         beats: polyBeat,
         poly: polyTotalBeats,
         state: polyState,
-        sounds: polyBeatSounds,
+        sounds: polySounds,
       });
 
       // handle new rhythms when base rhythm
@@ -375,8 +376,8 @@ export default function Metronome() {
     polyFrequencyData,
     polySubdivision,
     defaultBpm,
-    beatSounds,
-    polyBeatSounds,
+    sounds,
+    polySounds,
   ]);
 
   // cleanup only
@@ -402,6 +403,24 @@ export default function Metronome() {
       releaseWakeLock();
     } else {
       conductor.current.start();
+
+      // logging block state
+      const block: RhythmBlock = {
+        id: '1',
+        bpm,
+        measures: 1,
+        subdivision,
+        beats: beatCount,
+        usePoly: usePolyrhythm,
+        state: totalBeats,
+        sounds,
+        polyBeats: polyBeatCount,
+        polySubdivision,
+        polyState: totalPolyBeats,
+        polySounds,
+      };
+
+      console.log('BLOCK: ', block);
       requestWakeLock();
     }
   }
@@ -417,7 +436,7 @@ export default function Metronome() {
 
     const newSounds = getBeatSoundState(
       newBeatState.length,
-      beatSounds,
+      sounds,
       Sound.Oscillator,
     );
 
@@ -431,7 +450,7 @@ export default function Metronome() {
     totalBeatsRef.current = newBeatState; // used in useEffect
     setTotalBeats(newBeatState); // updates UI
     setSubdivision(newSubdivision);
-    setBeatSounds(newSounds);
+    setSounds(newSounds);
     subdivisionRef.current = newSubdivision;
   }
 
@@ -444,7 +463,7 @@ export default function Metronome() {
       newSubdivision.value,
     );
 
-    const newSounds = getBeatSoundState(newBeatState.length, polyBeatSounds);
+    const newSounds = getBeatSoundState(newBeatState.length, polySounds);
 
     if (conductor.current) {
       const rhythm = conductor.current.getRhythm(1);
@@ -456,7 +475,7 @@ export default function Metronome() {
     totalPolyBeatsRef.current = newBeatState; // used in useEffect
     setTotalPolyBeats(newBeatState); // updates UI
     setPolySubdivision(newSubdivision);
-    setPolyBeatSounds(newSounds);
+    setPolySounds(newSounds);
     polySubdivisionRef.current = newSubdivision;
   }
 
@@ -491,19 +510,25 @@ export default function Metronome() {
   }
 
   function updateBeatSounds(sound: Sound, index: number): void {
-    const updatedSounds = beatSounds.map((value, i) =>
-      i === index ? sound : value,
-    );
-    setBeatSounds(updatedSounds);
-    conductor.current?.updateSounds(updatedSounds, 0);
+    const newSounds = sounds.map((s, i) => {
+      if (i !== index) return s;
+      return s.includes(sound) ? s.filter((v) => v !== sound) : [...s, sound];
+    });
+    // do not remove last item
+    if (newSounds[index].length === 0) newSounds[index].push(sound);
+    setSounds(newSounds);
+    conductor.current?.updateSounds(newSounds, 0);
   }
 
   function updatePolyBeatSounds(sound: Sound, index: number): void {
-    const updatedSounds = polyBeatSounds.map((value, i) =>
-      i === index ? sound : value,
-    );
-    setPolyBeatSounds(updatedSounds);
-    conductor.current?.updateSounds(updatedSounds, 1);
+    const newSounds = polySounds.map((s, i) => {
+      if (i !== index) return s;
+      return s.includes(sound) ? s.filter((v) => v !== sound) : [...s, sound];
+    });
+    // do not remove last item
+    if (newSounds[index].length === 0) newSounds[index].push(sound);
+    setPolySounds(newSounds);
+    conductor.current?.updateSounds(newSounds, 1);
   }
 
   /**
@@ -554,9 +579,9 @@ export default function Metronome() {
         }
       }
       // update beat sounds state
-      const newSounds = getBeatSoundState(newBeatState.length, beatSounds);
+      const newSounds = getBeatSoundState(newBeatState.length, sounds);
       rhythm.updateSounds(newSounds);
-      setBeatSounds(newSounds);
+      setSounds(newSounds);
     }
   }
 
@@ -589,9 +614,9 @@ export default function Metronome() {
         setPolyBeatCountGhost(newBeatCount);
       }
       // update poly beat sounds state
-      const newSounds = getBeatSoundState(newBeatState.length, polyBeatSounds);
+      const newSounds = getBeatSoundState(newBeatState.length, polySounds);
       rhythm.updateSounds(newSounds);
-      setPolyBeatSounds(newSounds);
+      setPolySounds(newSounds);
     }
   }
 
@@ -744,7 +769,11 @@ export default function Metronome() {
 
     query += `&bst=${totalBeats.join('')}`;
 
-    query += `&bsst=${beatSounds.join('')}`;
+    /**
+     * converts: [[1,2,3], [4,5,6]]
+     * to: '1,2,3-4,5,6'
+     */
+    query += `&bsst=${sounds.join('-')}`;
 
     if (usePolyrhythm) {
       query += `&p=1`;
@@ -761,7 +790,11 @@ export default function Metronome() {
 
       query += `&pbst=${totalPolyBeats.join('')}`;
 
-      query += `&bpsst=${polyBeatSounds.join('')}`;
+      /**
+       * converts: [[1,2,3], [4,5,6]]
+       * to: '1,2,3-4,5,6'
+       */
+      query += `&bpsst=${polySounds.join('-')}`;
     }
 
     await navigator.clipboard.writeText(`${url}${btoa(query)}`);
@@ -802,8 +835,8 @@ export default function Metronome() {
               ? parseInt(polyBeatCountGhost.value)
               : polyBeatCountGhost
           }
-          beatSounds={beatSounds}
-          polyBeatSounds={polyBeatSounds}
+          beatSounds={sounds}
+          polyBeatSounds={polySounds}
           handleSoundSelection={updateBeatSounds}
           handlePolySoundSelection={updatePolyBeatSounds}
         />
@@ -892,7 +925,7 @@ export default function Metronome() {
                   disabled={false}
                   size="sm"
                   state={totalBeats}
-                  sounds={beatSounds}
+                  sounds={sounds}
                   onSoundChange={updateBeatSounds}
                 />
               </section>
@@ -993,7 +1026,7 @@ export default function Metronome() {
                   beats={polyBeatCount}
                   disabled={false}
                   size="sm"
-                  sounds={polyBeatSounds}
+                  sounds={polySounds}
                   state={totalPolyBeats}
                   onSoundChange={updatePolyBeatSounds}
                 />

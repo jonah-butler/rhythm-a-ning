@@ -15,7 +15,7 @@ interface BPMGridProps {
   subdivision: number;
   totalBeats: BeatState[];
   beatCountGhost: number | null;
-  beatSounds: Sound[];
+  beatSounds: Sound[][];
   handleBeatClick: (index: number) => void;
   handleSoundSelection: (sound: Sound, index: number) => void;
 }
@@ -170,7 +170,7 @@ function BPMGrid({
                   isOpen={menuOpenDot === i}
                   onKeepOpen={cancelMenuClose}
                   onRequestClose={scheduleMenuClose}
-                  activeSound={beatSounds[i]}
+                  activeSounds={beatSounds[i]}
                   rotateMenu={true}
                   onClick={(sound) => handleSoundSelection(sound, i)}
                 />
