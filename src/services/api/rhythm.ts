@@ -1,2 +1,2 @@
-const VERSION = 'v1';
-const PATH = 'rhythm';
+// const VERSION = 'v1';
+// const PATH = 'rhythm';

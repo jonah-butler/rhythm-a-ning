@@ -1,9 +1,9 @@
-import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
+// import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { type ChangeEvent, useRef, useState } from 'react';
 import BasicCard from '../components/Cards/BasicCard';
 import '../css/Register.css';
 
-const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+// const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
 enum ValidationErrors {
   InvalidPassword,
@@ -48,7 +48,7 @@ const isPasswordValid = (s: string) =>
 
 export default function Register() {
   const timerRef = useRef<null | number>(null);
-  const turnstileRef = useRef<TurnstileInstance | null>(null);
+  // const turnstileRef = useRef<TurnstileInstance | null>(null);
 
   const cancelTimeout = (timer: number) => clearTimeout(timer);
 
@@ -58,20 +58,20 @@ export default function Register() {
 
   const [verifyPasswordDisabled, setVerifyPasswordDisable] = useState(true);
 
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  // const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   const [validationErrors, setValidationErrors] = useState<ValidationErrors[]>(
     [],
   );
 
-  const canSubmit =
-    email.length > 0 &&
-    password.length > 0 &&
-    verifyPassword.length > 0 &&
-    rules.email(email) &&
-    isPasswordValid(password) &&
-    password === verifyPassword &&
-    turnstileToken !== null;
+  // const canSubmit =
+  //   email.length > 0 &&
+  //   password.length > 0 &&
+  //   verifyPassword.length > 0 &&
+  //   rules.email(email) &&
+  //   isPasswordValid(password) &&
+  //   password === verifyPassword &&
+  //   turnstileToken !== null;
 
   const updateEmail = (event: ChangeEvent<HTMLInputElement>) => {
     if (timerRef.current) cancelTimeout(timerRef.current);
@@ -204,19 +204,19 @@ export default function Register() {
         </div>
 
         <div className="mt-4">
-          <Turnstile
+          {/* <Turnstile
             ref={turnstileRef}
             siteKey={TURNSTILE_SITE_KEY}
             onSuccess={setTurnstileToken}
             onExpire={() => setTurnstileToken(null)}
             onError={() => setTurnstileToken(null)}
-          />
+          /> */}
         </div>
 
         <div className="flex flex-col text-left mt-4">
-          <button disabled={!canSubmit} className="outline small full">
+          {/* <button disabled={!canSubmit} className="outline small full">
             Register
-          </button>
+          </button> */}
         </div>
 
         <section>
