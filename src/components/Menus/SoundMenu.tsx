@@ -38,12 +38,13 @@ function SoundMenu({
   onClick,
   rotateMenu = false,
 }: SoundMenuProps) {
+  // console.log(activeSounds);
   return (
     <div className={`sound-menu${isOpen ? ' open' : ''}`}>
       {SOUNDS.map((sound, i) => (
         <button
           key={sound.id}
-          className={`sound-menu__item${activeSounds.includes(sound.value) ? ' active' : ''} ${rotateMenu ? ' rotate' : ''}`}
+          className={`sound-menu__item${activeSounds?.includes(sound.value) ? ' active' : ''} ${rotateMenu ? ' rotate' : ''}`}
           style={
             {
               '--angle': `${(360 / SOUNDS.length) * i - 90}deg`,

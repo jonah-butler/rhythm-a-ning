@@ -129,7 +129,7 @@ function BPMGrid({
           style={
             {
               '--beats': beatCountGhost / subdivision,
-              'z-index': menuOpenDot !== null ? '6' : '5',
+              zIndex: menuOpenDot !== null ? '6' : '5',
             } as React.CSSProperties
           }
         >

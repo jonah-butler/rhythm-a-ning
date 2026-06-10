@@ -55,7 +55,7 @@ export const getBeatSoundState = (
   previousSounds: Sound[][],
   defaultSound?: Sound,
 ): Sound[][] => {
-  const newSounds = new Array(beats).fill([defaultSound ?? Sound.HiHat]);
+  const newSounds = new Array(beats).fill([defaultSound ?? Sound.Oscillator]);
   for (let i = 0; i < beats; i++) {
     if (previousSounds[i] !== undefined) {
       newSounds[i] = previousSounds[i];
