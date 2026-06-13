@@ -41,6 +41,15 @@ export default function Home() {
           header="Rhythm Builder"
           description="Build custom rhythm workflows with tempo changes, polyrhythms, subdivisions and more"
         />
+        <div className="flex f-gap4 width-100">
+          <button className="outline small full">Login</button>
+          <button
+            onClick={() => navigate('/register')}
+            className="outline small full"
+          >
+            Register
+          </button>
+        </div>
       </div>
     </div>
   );

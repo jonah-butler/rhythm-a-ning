@@ -35,6 +35,10 @@
   color: var(--white);
 }
 
+.color-muted-pink-purple {
+  color: var(--muted-pink-purple);
+}
+
 body {
   /* display: flex; */
   margin: 0px;

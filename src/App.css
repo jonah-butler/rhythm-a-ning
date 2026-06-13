@@ -27,6 +27,27 @@ textarea {
   font-size: 16px;
 }
 
+input[type='text'],
+input[type='password'] {
+  border: none;
+  background: rgba(36, 36, 36, 0.5);
+  color: white;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid var(--muted-pink-purple);
+}
+
+input:focus-visible {
+  border: 1px solid var(--pink-purple);
+  outline: none;
+}
+
+input:disabled {
+  cursor: not-allowed;
+  color: #666 !important;
+  background-color: inherit !important;
+}
+
 .metronome__outer-container {
   margin: 0 auto;
   padding-top: 4rem;
@@ -125,6 +146,10 @@ button.outline {
   outline: 1px solid #f821ad;
 }
 
+button.outline:hover {
+  background-color: var(--pink-purple);
+}
+
 button:disabled {
   cursor: not-allowed;
   color: #666 !important;
@@ -142,7 +167,7 @@ button.filled:hover {
 }
 
 button.small {
-  padding: 0.3 0.9rem;
+  padding: 0.5rem 0.9rem;
   font-size: 0.8rem;
 }
 
@@ -183,6 +208,10 @@ button.sm-padding {
 
 .flex-wrap {
   flex-wrap: wrap;
+}
+
+.flex-auto {
+  flex: auto;
 }
 
 .flex-1 {
@@ -265,6 +294,10 @@ button.sm-padding {
   font-size: 16px;
 }
 
+.font-size-40 {
+  font-size: 40px;
+}
+
 .text-left {
   text-align: left;
 }
@@ -279,6 +312,26 @@ button.sm-padding {
 
 .mb-2 {
   margin-bottom: 0.5rem;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.mt-8 {
+  margin-top: 2rem;
+}
+
+.m-auto {
+  margin: 0 auto;
 }
 
 .font-weight-600 {
@@ -304,4 +357,24 @@ button.sm-padding {
 
 .bg-pink-purple {
   background-color: var(--pink-purple) !important;
+}
+
+.bg-black {
+  background-color: black;
+}
+
+.border-radius-2 {
+  border-radius: 0.5rem;
+}
+
+.container {
+  max-width: 1500px;
+}
+
+.max-w-35 {
+  max-width: 35rem;
+}
+
+.line-h-1_2 {
+  line-height: 1.2;
 }

@@ -4,7 +4,8 @@
   color: var(--pink-purple);
   padding: 0.25rem 2rem;
   border: 1px solid var(--pink-purple);
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
   align-items: center;
 
   span svg {

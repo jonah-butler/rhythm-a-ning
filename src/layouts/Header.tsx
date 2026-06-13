@@ -22,13 +22,12 @@ export default function Header() {
         <section className="flex f-gap1">
           <button
             onClick={() => navigate('/')}
-            className="back-navigation color-white"
+            className="back-navigation color-white small mr-2"
           >
             &#x27E8;
           </button>
           <h3>{MenuPageDescription[currentPage].title}</h3>
         </section>
-
         {currentSideMenu}
       </div>
     </header>

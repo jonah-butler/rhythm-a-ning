@@ -2,6 +2,8 @@ export const MenuPage = {
   Home: 'home',
   Metronome: 'metronome',
   Builder: 'builder',
+  Register: 'register',
+  Features: 'features',
 } as const;
 
 export const MenuPageDescription = {
@@ -16,6 +18,14 @@ export const MenuPageDescription = {
   [MenuPage.Builder]: {
     title: 'Rhythm Builder',
     description: 'build training sequences',
+  },
+  [MenuPage.Register]: {
+    title: 'Register',
+    description: '',
+  },
+  [MenuPage.Features]: {
+    title: 'Features',
+    description: '',
   },
 };
 
