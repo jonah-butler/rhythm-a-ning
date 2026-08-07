@@ -1,0 +1,25 @@
+.tag {
+  border-radius: 20px;
+  background-color: #321221;
+  color: var(--pink-purple);
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--pink-purple);
+  font-size: 13px;
+  font-weight: 600;
+  align-items: center;
+}
+
+.tag button {
+  background: transparent;
+  border: none;
+  padding: 0 0.4rem;
+  min-width: 0;
+}
+
+.tag button svg {
+  width: 12px;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}

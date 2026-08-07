@@ -1,7 +1,9 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useEffect, useRef, useState } from 'react';
+import CopyIcon from '../../assets/icons/copy.svg?react';
 import DragIcon from '../../assets/icons/drag.svg?react';
+import ExpandIcon from '../../assets/icons/expand.svg?react';
 import PauseIcon from '../../assets/icons/pause.svg?react';
 import PlayIcon from '../../assets/icons/play.svg?react';
 import TrashIcon from '../../assets/icons/trash.svg?react';
@@ -10,6 +12,7 @@ import { useRhythmBuilderContext } from '../../context/useBuilderContext';
 import '../../css/RhythmBuilderCard.css';
 import { beatCountData, subdivisionData } from '../../data';
 import {
+  generateUUID,
   getBeatSoundState,
   getBeatState,
   sanitizeOption,
@@ -40,10 +43,12 @@ export default function RhythmBuilderCard({
   audioCtx,
   cardAudioId,
 }: RhythmBuilderCardProps) {
-  const { updateBlock, deleteBlock } = useRhythmBuilderContext();
+  const { updateBlock, deleteBlock, addBlock, sections } =
+    useRhythmBuilderContext();
   const [showBeatState, setBeatState] = useState(false);
   const [showPolyBeatState, setPolyBeatState] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     if (cardAudioId !== block.id && isPlaying) {
@@ -69,7 +74,6 @@ export default function RhythmBuilderCard({
   const cardStyle: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    width: 180,
     borderRadius: 14,
     display: 'flex',
     flexDirection: 'column',
@@ -216,21 +220,42 @@ export default function RhythmBuilderCard({
     setIsPlaying(!isPlaying);
   };
 
+  const copyBlock = (): void => {
+    const name = block.name ? `${block.name} copy` : `Block ${index + 1} copy`;
+    addBlock({ ...block, id: generateUUID(), name });
+  };
+
+  const updateSection = (value: string): void => {
+    const section = sections.find((s) => s.value === value);
+    updateBlock(block.id, { section });
+  };
+
+  const updateBlockName = (name: string): void => {
+    updateBlock(block.id, { name });
+  };
+
   return (
     <div
       ref={setNodeRef}
       {...attributes}
       style={cardStyle}
-      className={`rhythm-builder-card ${isPlaying ? 'active' : ''}`}
+      className={`rhythm-builder-card ${isPlaying ? 'active' : ''} ${expanded ? 'expanded' : ''}`}
     >
       <section className="flex action-row">
-        <div className="drag-container">
+        <div className="drag-container mr-4">
           <DragIcon
             {...listeners}
             className="drag-icon"
             style={{ width: '18px', marginRight: '0.25rem' }}
           />
-          <span>Block {index + 1}</span>
+          <span>
+            <input
+              placeholder={`Block ${index + 1}`}
+              className="input-text"
+              value={block.name}
+              onChange={(e) => updateBlockName(e.target.value)}
+            ></input>
+          </span>
           <div className="audio-controls-container">
             {isPlaying ? (
               <button onClick={togglePlayback} className="sm-padding">
@@ -243,15 +268,31 @@ export default function RhythmBuilderCard({
             )}
           </div>
         </div>
-        {showDelete ? (
+        <section className="flex align-center f-gap4">
           <div>
-            <TrashIcon
-              onClick={() => deleteCardBlock()}
-              className="trash-icon"
+            <CopyIcon
+              onClick={copyBlock}
+              className="hover-icon"
               style={{ width: '16px' }}
             />
           </div>
-        ) : null}
+          <div>
+            <ExpandIcon
+              onClick={() => setExpanded(!expanded)}
+              className="hover-icon"
+              style={{ width: '16px' }}
+            />
+          </div>
+          {showDelete ? (
+            <div>
+              <TrashIcon
+                onClick={() => deleteCardBlock()}
+                className="hover-icon"
+                style={{ width: '16px' }}
+              />
+            </div>
+          ) : null}
+        </section>
       </section>
 
       <section>
@@ -320,7 +361,9 @@ export default function RhythmBuilderCard({
         </section>
 
         {showBeatState ? (
-          <section className="flex flex-col width-100 space-between align-center mb-2 f-gap4">
+          <section
+            className={`state-container flex flex-col width-100 space-between align-center mb-2 f-gap4 ${expanded ? 'expanded' : ''}`}
+          >
             <RhythmState
               onUpdate={(state) => updateBlock(block.id, { state })}
               beats={block.beats}
@@ -332,6 +375,20 @@ export default function RhythmBuilderCard({
             />
           </section>
         ) : null}
+
+        <section className="flex width-100 space-between align-center mb-2">
+          <div className="text-light font-size-13 text-left flex-1">
+            section
+          </div>
+          <div className="flex flex-1">
+            <Dropdown
+              variant="full"
+              data={sections}
+              currentValue={block.section}
+              onChange={updateSection}
+            />
+          </div>
+        </section>
 
         <section className="flex width-100 space-between align-center mb-2">
           <div className="flex flex-col text-left">

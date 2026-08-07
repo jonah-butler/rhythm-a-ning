@@ -23,12 +23,27 @@ export type RhythmBlock = {
   polySubdivision: DropdownOptions;
   polyState: BeatState[];
   polySounds: Sound[][];
+  section: Section;
+  name: string;
+  description?: string;
+};
+
+export type Section = DropdownOptions & {
+  id: number;
+  color?: string;
 };
 
 export type PolyState = {
   beats: DropdownOptions;
   subdivision: DropdownOptions;
   state: BeatState[];
+};
+
+export const DefaultSection: Section = {
+  id: Date.now(),
+  label: 'None',
+  value: `${Date.now()}`,
+  color: undefined,
 };
 
 export const DefaultRhythmBlock = {
@@ -44,6 +59,8 @@ export const DefaultRhythmBlock = {
   polySubdivision: sanitizeOption(subdivisionData[0]),
   polyState: getBeatState(3, 'base'),
   polySounds: getBeatSoundState(3, [], Sound.Oscillator),
+  section: DefaultSection,
+  name: '',
 };
 
 export const DefaultRhythmWorkflow: RhythmBlockStore = {
@@ -51,6 +68,7 @@ export const DefaultRhythmWorkflow: RhythmBlockStore = {
   id: generateUUID(),
   createdAt: Date.now(),
   updatedAt: Date.now(),
+  sections: [DefaultSection],
   blocks: [DefaultRhythmBlock],
 };
 
@@ -60,6 +78,7 @@ export const DefaultRhythmWorkflowFactory = (): RhythmBlockStore => {
     id: generateUUID(),
     createdAt: Date.now(),
     updatedAt: Date.now(),
+    sections: [DefaultSection],
     blocks: [DefaultRhythmBlock],
   };
 };

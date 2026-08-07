@@ -84,6 +84,25 @@ export default function RhythmBuilder() {
     [rhythmWorkflow],
   );
 
+  const getSectionRunFlags = (i: number) => {
+    const block = rhythmWorkflow.blocks[i];
+    const prev = rhythmWorkflow.blocks[i - 1];
+    const next = rhythmWorkflow.blocks[i + 1];
+    const hasSection = block.section.label !== 'None';
+
+    const sameAsPrev =
+      hasSection && !!prev && prev.section.value === block.section.value;
+    const sameAsNext =
+      hasSection && !!next && next.section.value === block.section.value;
+
+    return {
+      hasSection,
+      showLabel: hasSection && !sameAsPrev,
+      continueLeft: sameAsPrev,
+      continueRight: sameAsNext,
+    };
+  };
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 6 },
@@ -272,7 +291,7 @@ export default function RhythmBuilder() {
         </section>
       </section>
 
-      <section className="flex flex-1 justify-center align-center f-gap4">
+      <section className="flex justify-center align-center f-gap4">
         <TextInput
           placeholder="untitled workflow"
           text={rhythmWorkflow.name}
@@ -299,20 +318,47 @@ export default function RhythmBuilder() {
               items={ids}
               strategy={horizontalListSortingStrategy}
             >
-              {rhythmWorkflow.blocks.map((block, i) => (
-                <RhythmBuilderCard
-                  onChange={() => setHasChange(true)}
-                  onTogglePlayback={(id, playingState) =>
-                    updateGlobalPlayback(id, playingState)
-                  }
-                  block={block}
-                  key={block.id}
-                  showDelete={i !== 0}
-                  index={i}
-                  cardAudioId={cardAudioId}
-                  audioCtx={audioCtxReady}
-                />
-              ))}
+              {rhythmWorkflow.blocks.map((block, i) => {
+                const { hasSection, showLabel, continueLeft, continueRight } =
+                  getSectionRunFlags(i);
+
+                return (
+                  <section key={block.id}>
+                    {hasSection ? (
+                      <section className="block-section">
+                        <div className="block-section-label">
+                          {showLabel ? block.section.label : ' '}
+                        </div>
+                        <div
+                          style={{ backgroundColor: block.section.color }}
+                          className={`block-section-bar ${continueLeft ? 'continue-left' : ''} ${continueRight ? 'continue-right' : ''}`}
+                        ></div>
+                      </section>
+                    ) : (
+                      <section className="block-section">
+                        <div className="block-section-label"></div>
+                        <div
+                          style={{ backgroundColor: '#4d4d4d' }}
+                          className={`block-section-bar`}
+                        ></div>
+                      </section>
+                    )}
+
+                    <RhythmBuilderCard
+                      onChange={() => setHasChange(true)}
+                      onTogglePlayback={(id, playingState) =>
+                        updateGlobalPlayback(id, playingState)
+                      }
+                      block={block}
+                      key={block.id}
+                      showDelete={i !== 0}
+                      index={i}
+                      cardAudioId={cardAudioId}
+                      audioCtx={audioCtxReady}
+                    />
+                  </section>
+                );
+              })}
             </SortableContext>
           </DndContext>
           <AddVerticalButton ref={addBlockBtn} onClick={addNewBlock} />

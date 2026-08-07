@@ -85,7 +85,7 @@ export default function Features() {
           description={
             <>
               Check out the <Link to="/">project timeline</Link> for more
-              upcoming features and enhancements!
+              upcoming features and enhancements
             </>
           }
           onClick={() => {}}

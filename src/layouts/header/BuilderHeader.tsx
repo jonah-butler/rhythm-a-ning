@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import BuilderIcon from '../../assets/icons/builder.svg?react';
 import FolderIcon from '../../assets/icons/folder.svg?react';
-import NoteIcon from '../../assets/icons/note.svg?react';
+import PlusIcon from '../../assets/icons/plus.svg?react';
 import ResetIcon from '../../assets/icons/reset.svg?react';
+import SectionsIcon from '../../assets/icons/sections.svg?react';
 import TrashIcon from '../../assets/icons/trash.svg?react';
 import Modal from '../../components/Modals/Generic';
 import {
@@ -12,7 +12,7 @@ import {
   totalMeasures,
   totalTime,
 } from '../../context/builder.helpers';
-import type { RhythmBlock } from '../../context/BuilderContext.types';
+import type { RhythmBlock, Section } from '../../context/BuilderContext.types';
 import { type RhythmBlockStore } from '../../context/IndexedDB.types';
 import { useRhythmBuilderContext } from '../../context/useBuilderContext';
 import { useIndexedDBContext } from '../../context/useIndexedDBContext';
@@ -22,13 +22,21 @@ export default function BuilderHeader() {
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [loadModalOpen, setLoadModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sectionsModalOpen, setSectionsModalOpen] = useState(false);
+  const [sectionColor, setSectionColor] = useState('#f821ad');
+  const [sectionName, setSectionName] = useState('');
 
   const [workflows, setWorkflows] = useState<RhythmBlockStore[]>([]);
 
-  const navigate = useNavigate();
-
-  const { rhythmWorkflow, resetBlocks, setActiveBlocks, resetWorkflow } =
-    useRhythmBuilderContext();
+  const {
+    rhythmWorkflow,
+    resetBlocks,
+    setActiveBlocks,
+    resetWorkflow,
+    addSection,
+    deleteSection,
+    updateSection,
+  } = useRhythmBuilderContext();
 
   const { saveWorkflow, getWorkflows, getWorkflowById, deleteWorkflowById } =
     useIndexedDBContext();
@@ -40,6 +48,10 @@ export default function BuilderHeader() {
 
   const openNewWorkflowModal = () => {
     setNewWorkflowModalOpen(true);
+  };
+
+  const openSectionsModal = () => {
+    setSectionsModalOpen(true);
   };
 
   const createNewWorkflow = async () => {
@@ -96,6 +108,19 @@ export default function BuilderHeader() {
     setMobileMenuOpen(false);
   };
 
+  const handleAddSection = (): void => {
+    const section: Section = {
+      id: Date.now(),
+      color: sectionColor,
+      label: sectionName,
+      value: `${Date.now()}`,
+    };
+
+    addSection(section);
+    // setSectionColor('#f821ad');
+    setSectionName('');
+  };
+
   const deleteWorkflow = async (id: string): Promise<void> => {
     try {
       const didDelete = !(await deleteWorkflowById(id));
@@ -124,9 +149,9 @@ export default function BuilderHeader() {
       <div className={`builder-actions ${mobileMenuOpen ? 'open' : ''}`}>
         <button
           className="color-white font-size-13"
-          onClick={() => handleMobileActionMenu(() => navigate('/metronome'))}
+          onClick={() => handleMobileActionMenu(() => openSectionsModal())}
         >
-          <NoteIcon style={{ width: '18px' }} /> Metronome
+          <SectionsIcon style={{ width: '18px' }} /> Sections
         </button>
 
         <button
@@ -150,6 +175,114 @@ export default function BuilderHeader() {
           <FolderIcon style={{ width: '18px' }} /> Load
         </button>
       </div>
+
+      {sectionsModalOpen ? (
+        <Modal close={() => setSectionsModalOpen(false)}>
+          <Modal.Header onClose={() => setSectionsModalOpen(false)}>
+            Add a Section
+          </Modal.Header>
+          <Modal.Body>
+            <section>
+              {rhythmWorkflow.sections.length ? (
+                <table>
+                  <thead>
+                    <tr className="text-light">
+                      <th>Color</th>
+                      <th>Name</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rhythmWorkflow.sections
+                      .filter((section) => section.label !== 'None')
+                      .map((section, i) => {
+                        return (
+                          <tr key={i}>
+                            <td>
+                              {section.color ? (
+                                <input
+                                  disabled={section.label === 'None'}
+                                  type="color"
+                                  value={`${section.color}`}
+                                  onChange={(e) =>
+                                    updateSection({
+                                      ...section,
+                                      color: e.target.value,
+                                    })
+                                  }
+                                ></input>
+                              ) : (
+                                '--'
+                              )}
+                            </td>
+                            <td>
+                              <input
+                                disabled={section.label === 'None'}
+                                type="text"
+                                value={section.label}
+                                onChange={(e) =>
+                                  updateSection({
+                                    ...section,
+                                    label: e.target.value,
+                                  })
+                                }
+                              ></input>
+                            </td>
+                            <td>
+                              {' '}
+                              <button
+                                className="color-white"
+                                onClick={() => deleteSection(section.id)}
+                              >
+                                <TrashIcon style={{ width: '12px' }} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    <tr>
+                      <td>
+                        <input
+                          onChange={(e) => setSectionColor(e.target.value)}
+                          type="color"
+                          value={sectionColor}
+                        ></input>
+                      </td>
+                      <td>
+                        <input
+                          onChange={(e) => setSectionName(e.target.value)}
+                          type="text"
+                          value={sectionName}
+                        ></input>
+                      </td>
+                      <td>
+                        {' '}
+                        <button
+                          disabled={!sectionName}
+                          className="color-white"
+                          onClick={handleAddSection}
+                        >
+                          <PlusIcon style={{ width: '12px' }} />
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              ) : null}
+            </section>
+          </Modal.Body>
+          <Modal.Footer>
+            <section className="flex f-gap2 justify-end">
+              <button
+                onClick={() => setSectionsModalOpen(false)}
+                className="small outline color-white"
+              >
+                cancel
+              </button>
+            </section>
+          </Modal.Footer>
+        </Modal>
+      ) : null}
+
       {newWorkflowModalOpen ? (
         <Modal close={closeModal}>
           <Modal.Header onClose={closeModal}>Create New Workflow</Modal.Header>

@@ -11,6 +11,7 @@ export interface ISoundPlayer {
 
 export type OscillatorParamsBase = {
   audioCtx: AudioContext;
+  outputNode: GainNode;
   frequency: number;
   beatOneOffset: number;
   subdividedOffset: number;

@@ -26,12 +26,17 @@ export class Conductor extends Emitter<CondcutorEvents> {
   audioCtx: AudioContext;
   bpm: number;
   workflow: RhythmBlock[] | undefined;
+  masterGain: GainNode;
+  private iosUnlockElement: HTMLAudioElement | null = null;
+  private iosKeepAlive: ConstantSourceNode | null = null;
 
   constructor({ audioCtx, bpm, workflow }: ConductorParams) {
     super();
     this.audioCtx = audioCtx;
     this.bpm = bpm;
     this.workflow = workflow;
+    this.masterGain = audioCtx.createGain();
+    this.masterGain.connect(audioCtx.destination);
   }
 
   private get currentTime(): number {
@@ -80,6 +85,7 @@ export class Conductor extends Emitter<CondcutorEvents> {
 
       const osc1 = new SoundPlayer({
         audioCtx: this.audioCtx,
+        outputNode: this.masterGain,
         frequency: 750,
         beatOneOffset: 3,
         subdividedOffset: -3,
@@ -90,6 +96,7 @@ export class Conductor extends Emitter<CondcutorEvents> {
 
       const osc2 = new SoundPlayer({
         audioCtx: this.audioCtx,
+        outputNode: this.masterGain,
         frequency: 550,
         beatOneOffset: 3,
         subdividedOffset: -3,
@@ -309,10 +316,10 @@ export class Conductor extends Emitter<CondcutorEvents> {
   async start(): Promise<boolean> {
     try {
       await this.audioCtx.resume();
+      await this.unlockIOSAudio();
     } catch (err) {
       console.log(this.audioCtx, err);
     }
-    // await this.audioElement.play();
 
     for (const rhythm of this.rhythms) {
       rhythm.init(this.currentTime);
@@ -365,5 +372,33 @@ export class Conductor extends Emitter<CondcutorEvents> {
 
   getRhythm(index: number): Rhythm {
     return this.rhythms[index];
+  }
+
+  async unlockIOSAudio(): Promise<void> {
+    if (this.iosUnlockElement) return;
+    if (!/iPhone|iPad|iPod/.test(navigator.userAgent)) return;
+
+    this.masterGain.disconnect(this.audioCtx.destination);
+    const streamDest = this.audioCtx.createMediaStreamDestination();
+    this.masterGain.connect(streamDest);
+
+    // Without a continuous signal, the <audio> element stalls during silence
+    // between beats and replays buffered audio in a burst when the next note
+    // arrives, causing the rapid-fire stutter on iOS. A constant inaudible
+    // tone keeps the pipeline active.
+    const keepAliveGain = this.audioCtx.createGain();
+    keepAliveGain.gain.value = 0.00001;
+    this.iosKeepAlive = this.audioCtx.createConstantSource();
+    this.iosKeepAlive.connect(keepAliveGain);
+    keepAliveGain.connect(streamDest);
+    this.iosKeepAlive.start();
+
+    const audio = document.createElement('audio');
+    audio.srcObject = streamDest.stream;
+    audio.setAttribute('playsinline', '');
+    document.body.appendChild(audio);
+    this.iosUnlockElement = audio;
+
+    await audio.play().catch(() => {});
   }
 }

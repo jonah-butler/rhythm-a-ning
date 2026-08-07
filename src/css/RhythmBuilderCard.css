@@ -9,6 +9,11 @@
   flex: 0 0 auto;
   padding: 1rem;
   user-select: none;
+  margin-top: 0.5rem;
+}
+
+.rhythm-builder-card.expanded {
+  width: 600px;
 }
 
 .rhythm-builder-card:hover {
@@ -23,6 +28,15 @@
   cursor: pointer;
   opacity: 0.9;
   box-shadow: 0px 0px 20px 1px rgba(248, 33, 173, 0.35);
+}
+
+.state-container {
+  max-width: 350px;
+  margin: 2rem 0;
+}
+
+.state-container.expanded {
+  max-width: 100%;
 }
 
 .action-row {
@@ -51,10 +65,10 @@
     }
   }
 
-  .trash-icon {
+  .hover-icon {
     color: var(--extra-light-gray);
   }
-  .trash-icon:hover {
+  .hover-icon:hover {
     color: var(--pink-purple);
   }
 }

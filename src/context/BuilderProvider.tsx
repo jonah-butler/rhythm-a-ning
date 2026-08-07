@@ -7,6 +7,7 @@ import {
   DefaultRhythmWorkflowFactory,
   type PolyState,
   type RhythmBlock,
+  type Section,
 } from './BuilderContext.types';
 import { type RhythmBlockStore } from './IndexedDB.types';
 import { averageTempo, totalMeasures, totalTime } from './builder.helpers';
@@ -68,6 +69,33 @@ export function RhythmBuilderProvider({ children }: { children: ReactNode }) {
     setRhythmWorkflow((prev) => ({ ...prev, blocks: filtered }));
   };
 
+  const addSection = (section: Section): void => {
+    setRhythmWorkflow((prev) => ({
+      ...prev,
+      sections: [...prev.sections, section],
+    }));
+  };
+
+  const deleteSection = (id: number): void => {
+    const sections = rhythmWorkflow.sections.filter(
+      (section) => section.id !== id,
+    );
+    setRhythmWorkflow((prev) => ({
+      ...prev,
+      sections,
+    }));
+  };
+
+  const updateSection = (section: Section): void => {
+    setRhythmWorkflow((prev) => ({
+      ...prev,
+      sections: prev.sections.map((s) => (s.id === section.id ? section : s)),
+      blocks: prev.blocks.map((block) =>
+        block.section.id === section.id ? { ...block, section } : block,
+      ),
+    }));
+  };
+
   const value = useMemo(
     () => ({
       rhythmWorkflow,
@@ -82,6 +110,10 @@ export function RhythmBuilderProvider({ children }: { children: ReactNode }) {
       setActiveBlocks,
       updateWorkflowName,
       resetWorkflow,
+      addSection,
+      sections: rhythmWorkflow.sections,
+      deleteSection,
+      updateSection,
     }),
     [rhythmWorkflow],
   );

@@ -32,7 +32,7 @@
       align-items: center;
       font-weight: 700;
       position: relative;
-      min-width: 30px;
+      min-width: 50px;
       font-size: 10px;
       flex: 1;
 
@@ -70,11 +70,38 @@
   .builder-card-inner-container {
     display: flex;
     gap: 1rem;
-    padding: 2rem;
+    padding: 1rem 2rem;
     align-items: flex-start;
 
     width: max-content; /* makes container as wide as its children */
     min-width: 100%; /* still fills the viewport when there are few cards */
+  }
+
+  .block-section {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+  }
+
+  .block-section-label {
+    padding: 0 0.5rem 0.3rem;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 23px;
+  }
+
+  .block-section-bar {
+    height: 3px;
+  }
+
+  .block-section-bar.continue-left {
+    margin-left: -0.5rem;
+  }
+
+  .block-section-bar.continue-right {
+    margin-right: -0.5rem;
   }
 }
 

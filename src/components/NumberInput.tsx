@@ -15,7 +15,7 @@ export default function NumberInput({
 }: NumberInputProps) {
   const validateInput = (input: string): void => {
     let intInput = Number(input);
-    if (input === '') {
+    if (input === '' || intInput < min) {
       intInput = min;
     }
     const regexInteger = /^\d+$/;
@@ -38,7 +38,8 @@ export default function NumberInput({
         pattern="[0-9]*"
         inputMode="numeric"
         value={number}
-        onChange={(e) => validateInput(e.target.value)}
+        onChange={(e) => onClick(Number(e.target.value))}
+        onBlur={(e) => validateInput(e.target.value)}
       />
       <button
         disabled={number === max}

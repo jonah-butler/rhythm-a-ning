@@ -118,7 +118,7 @@ export const parseMetronomeQueryParams = (query: string): QueryValidation => {
 
     const polyBaseSounds = params.get('bpsst');
     if (polyBaseSounds) {
-      validation.beatSounds = polyBaseSounds
+      validation.polyBeatSound = polyBaseSounds
         .split('-')
         .map((sounds) => sounds.split(',').map((s) => +s));
     }

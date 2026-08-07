@@ -4,6 +4,12 @@ export const MenuPage = {
   Builder: 'builder',
   Register: 'register',
   Features: 'features',
+  VerifyAccount: 'verify-account',
+  Login: 'login',
+  ResetPassword: 'reset-password',
+  VerifyResetPassword: 'verify-reset-password',
+  PrivacyPolicy: 'privacy-policy',
+  Account: 'account', // protected
 } as const;
 
 export const MenuPageDescription = {
@@ -25,6 +31,30 @@ export const MenuPageDescription = {
   },
   [MenuPage.Features]: {
     title: 'Features',
+    description: '',
+  },
+  [MenuPage.VerifyAccount]: {
+    title: 'Verify Account',
+    description: '',
+  },
+  [MenuPage.Login]: {
+    title: 'Login',
+    description: '',
+  },
+  [MenuPage.Account]: {
+    title: 'Account',
+    description: '',
+  },
+  [MenuPage.ResetPassword]: {
+    title: 'Reset Password',
+    description: '',
+  },
+  [MenuPage.VerifyResetPassword]: {
+    title: 'Verify Password',
+    description: '',
+  },
+  [MenuPage.PrivacyPolicy]: {
+    title: 'Privacy Policy',
     description: '',
   },
 };

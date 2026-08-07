@@ -12,6 +12,7 @@ export class SoundPlayer implements ISoundPlayer {
   private static soundMap = getSoundMap();
 
   audioCtx: AudioContext;
+  outputNode: GainNode;
   frequency: number;
   beatOneOffset: number;
   subdividedOffset: number;
@@ -21,6 +22,7 @@ export class SoundPlayer implements ISoundPlayer {
 
   constructor({
     audioCtx,
+    outputNode,
     frequency,
     beatOneOffset,
     subdividedOffset,
@@ -29,6 +31,7 @@ export class SoundPlayer implements ISoundPlayer {
     sound,
   }: OscillatorParams) {
     this.audioCtx = audioCtx;
+    this.outputNode = outputNode;
     this.frequency = frequency;
     this.beatOneOffset = beatOneOffset;
     this.subdividedOffset = subdividedOffset;
@@ -88,7 +91,7 @@ export class SoundPlayer implements ISoundPlayer {
     source.playbackRate.value = freq / this.frequency; // ratio relative to base
 
     source.connect(gain);
-    gain.connect(this.audioCtx.destination);
+    gain.connect(this.outputNode);
     gain.gain.setValueAtTime(this.gain, startTime);
     source.start(startTime);
 
@@ -124,9 +127,8 @@ export class SoundPlayer implements ISoundPlayer {
 
     osc.frequency.setValueAtTime(freq, startTime);
 
-    // connect chain properly
     osc.connect(gain);
-    gain.connect(this.audioCtx.destination);
+    gain.connect(this.outputNode);
 
     // avoid negative time scheduling
     const safeStart = Math.max(0, startTime - 0.005);

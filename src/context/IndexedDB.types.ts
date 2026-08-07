@@ -1,5 +1,5 @@
 import { type GenericResponse } from '../types';
-import { type RhythmBlock } from './BuilderContext.types';
+import { type RhythmBlock, type Section } from './BuilderContext.types';
 
 export const DB_VERSION = 3;
 export const DB_NAME = 'metronome';
@@ -14,6 +14,7 @@ export type RhythmBlockStore = {
   createdAt: number;
   updatedAt: number;
   name: string;
+  sections: Section[];
   blocks: RhythmBlock[];
 };
 

@@ -4,10 +4,11 @@ import '../../css/ModalGeneric.css';
 
 type ModalProps = {
   children: ReactNode;
+  size?: 'sm' | 'md' | 'lg';
   close: () => void;
 };
 
-export default function Modal({ children, close }: ModalProps) {
+export default function Modal({ children, size, close }: ModalProps) {
   const portalRoot = document.body;
 
   if (!portalRoot) {
@@ -20,7 +21,10 @@ export default function Modal({ children, close }: ModalProps) {
 
   return (
     <div>
-      {createPortal(<div className="modal">{children}</div>, portalRoot)}
+      {createPortal(
+        <div className={`modal ${size ? size : ''}`}>{children}</div>,
+        portalRoot,
+      )}
       {createPortal(
         <div className="modal-backdrop" onClick={closeBackdrop}></div>,
         portalRoot,
@@ -36,11 +40,11 @@ type ModalBodyProps = {
 
 Modal.Header = function Header({ children, onClose }: ModalBodyProps) {
   return (
-    <section className="modal-header">
+    <section className="modal-header mb-8">
       <div onClick={onClose} className="modal-close">
         &times;
       </div>
-      <h3>{children}</h3>
+      <h2>{children}</h2>
     </section>
   );
 };

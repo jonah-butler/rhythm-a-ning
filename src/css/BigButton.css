@@ -6,6 +6,7 @@
   align-items: center;
   cursor: pointer;
   transition: all 0.2s ease;
+  margin-bottom: 1rem;
 
   &.sm {
     width: 400px;
