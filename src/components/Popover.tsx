@@ -1,7 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import '../../css/Subdivision-Modal.css';
-import { subdivisionData } from '../../data';
-import Dropdown from '../Dropdown';
+import { useEffect, useRef, type ReactNode } from 'react';
+import '../css/Popover.css';
 
 type SubdivisionModalProps = {
   coordinates: {
@@ -9,13 +7,15 @@ type SubdivisionModalProps = {
     y: number;
   };
   isVisible: boolean;
+  children: ReactNode;
   handleBlur: () => void;
 };
 
-export function SubdivisionModal({
+export function Popover({
   isVisible,
   handleBlur,
   coordinates,
+  children,
 }: SubdivisionModalProps) {
   const modal = useRef<HTMLDivElement | null>(null);
 
@@ -26,19 +26,10 @@ export function SubdivisionModal({
     });
   }, [isVisible]);
 
-  const [selectedValue, setSelectedValue] = useState(subdivisionData[0]);
-
-  const handleChange = (value: string): void => {
-    handleBlur();
-    const newValue = subdivisionData.filter((data) => data.value === value)[0];
-    console.log(newValue);
-    setSelectedValue(newValue);
-  };
-
   return (
     <div
       ref={modal}
-      className="subdivision-modal"
+      className="popover"
       style={{
         display: isVisible ? 'block' : 'none',
         top: `${coordinates.y}px`,
@@ -51,12 +42,7 @@ export function SubdivisionModal({
       }}
       tabIndex={-1}
     >
-      <Dropdown
-        label=""
-        data={subdivisionData}
-        currentValue={selectedValue}
-        onChange={handleChange}
-      />
+      {children}
     </div>
   );
 }

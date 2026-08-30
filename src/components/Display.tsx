@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import '../css/Display.css';
+import { baseBeatStore, polyBeatStore } from '../timing_engine/beatStore';
 import { Sound } from '../timing_engine/oscillator.types';
 import type { BeatState } from '../timing_engine/rhythm.types';
 import BPMGrid from './BPM-Grid';
@@ -10,8 +11,6 @@ interface DisplayProps {
   isRunning: boolean;
   bpm: number;
   beats: number;
-  currentBeat: number;
-  polyBeat: number;
   polyrhythm: number;
   usePoly: boolean;
   subdivision: number;
@@ -36,8 +35,6 @@ function Display({
   isRunning,
   bpm,
   beats,
-  currentBeat,
-  polyBeat,
   polyrhythm,
   usePoly,
   togglePlayback,
@@ -63,7 +60,7 @@ function Display({
         {/* Large Outer BPM Grid */}
         <BPMGrid
           beats={beats}
-          currentBeat={currentBeat}
+          beatStore={baseBeatStore}
           subdivision={subdivision}
           totalBeats={totalBeats}
           handleBeatClick={(i: number) => handleBeatClick(i)}
@@ -87,7 +84,7 @@ function Display({
         {usePoly && (
           <BPMGrid
             beats={polyrhythm}
-            currentBeat={polyBeat}
+            beatStore={polyBeatStore}
             smallVersion={true}
             subdivision={polySubdivision}
             totalBeats={totalPolyBeats}
@@ -99,12 +96,7 @@ function Display({
         )}
 
         {/* Rotating Clock Arm */}
-        <MetronomeClockArm
-          isRunning={isRunning}
-          bpm={bpm}
-          beats={beats}
-          currentBeat={currentBeat}
-        />
+        <MetronomeClockArm isRunning={isRunning} bpm={bpm} beats={beats} />
       </section>
     </div>
   );

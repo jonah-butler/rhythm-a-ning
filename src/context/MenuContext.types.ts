@@ -18,7 +18,7 @@ export const MenuPageDescription = {
     description: '',
   },
   [MenuPage.Metronome]: {
-    title: 'Metronome Sequencer',
+    title: 'Metronome',
     description: 'build timing foundating and discover poly rhythms',
   },
   [MenuPage.Builder]: {

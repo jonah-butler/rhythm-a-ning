@@ -3,6 +3,8 @@ import '../../css/Tabs.css';
 
 type TabsProps = {
   index?: number;
+  width?: 'full';
+  sticky?: boolean;
   children: React.ReactNode;
   updateTab(tab: number): void;
 };
@@ -19,7 +21,13 @@ function isTabElement(child: React.ReactNode): child is ReactElement<TabProps> {
   return 'label' in props;
 }
 
-export function Tabs({ index, children, updateTab }: TabsProps) {
+export function Tabs({
+  index,
+  children,
+  updateTab,
+  width,
+  sticky = false,
+}: TabsProps) {
   const [activeIndex, setActiveIndex] = useState(index ?? 0);
 
   const tabs = Children.toArray(children).filter(isTabElement);
@@ -32,10 +40,10 @@ export function Tabs({ index, children, updateTab }: TabsProps) {
   };
 
   return (
-    <div className="tabs">
+    <div className={`tabs ${width ? width : ''}`}>
       <div className="tabs__inner-container">
         {/* Tab Buttons */}
-        <div className="tab-list">
+        <div className={`tab-list ${sticky ? 'sticky' : ''}`}>
           {tabs.map((tab, index) => (
             <button
               key={index}

@@ -1,7 +1,7 @@
 import {
   type MouseEvent,
   useCallback,
-  useLayoutEffect,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -10,6 +10,7 @@ import { createPortal } from 'react-dom';
 import '../css/BPM-Grid.css';
 import { isMobileUserAgent } from '../helpers/metronome.helpers';
 import { getBeatState } from '../services/rhythm.services';
+import type { BeatStore } from '../timing_engine/beatStore';
 import { Sound } from '../timing_engine/oscillator.types';
 import type { BeatState } from '../timing_engine/rhythm.types';
 import SoundMenu from './Menus/SoundMenu';
@@ -17,7 +18,7 @@ import { SubdivisionModal } from './Modals/Subdivision-Modal';
 
 interface BPMGridProps {
   beats: number;
-  currentBeat: number;
+  beatStore: BeatStore;
   smallVersion?: boolean;
   subdivision: number;
   totalBeats: BeatState[];
@@ -29,7 +30,7 @@ interface BPMGridProps {
 
 function BPMGrid({
   beats,
-  currentBeat,
+  beatStore,
   smallVersion,
   subdivision,
   handleBeatClick,
@@ -44,10 +45,6 @@ function BPMGrid({
     subdivision: number,
   ): boolean {
     return !Number.isInteger((beats / (beats / subdivision)) * beat);
-  }
-
-  function isSameBeat(i: number): boolean {
-    return 1 + i * subdivision === currentBeat;
   }
 
   const PRESS_THRESHOLD = 1000;
@@ -98,23 +95,6 @@ function BPMGrid({
     cancelMenuOpen();
     scheduleMenuClose();
   }, [cancelMenuOpen, scheduleMenuClose]);
-
-  // imperatively toggle the active-beat class so beat ticks never force
-  // React to re-reconcile the whole dot list (see the memoized `dots`
-  // list below, which intentionally excludes `currentBeat`)
-  useLayoutEffect(() => {
-    const newActiveIndex = totalBeats.findIndex((_, i) => isSameBeat(i));
-
-    const prevIndex = activeIndexRef.current;
-    if (prevIndex !== -1 && prevIndex !== newActiveIndex) {
-      dotRefs.current[prevIndex]?.classList.remove('active');
-    }
-    if (newActiveIndex !== -1) {
-      dotRefs.current[newActiveIndex]?.classList.add('active');
-    }
-    activeIndexRef.current = newActiveIndex;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentBeat, subdivision, totalBeats]);
 
   type ModalCoordinates = {
     x: number;
@@ -206,6 +186,31 @@ function BPMGrid({
       handleSoundSelection,
     ],
   );
+
+  // Drives the active-beat highlight straight from the audio clock. Beat
+  // ticks mutate classList instead of setting state, so they cost zero
+  // renders. Re-runs when `dots` changes because React rewrites the
+  // className attribute on those nodes, clearing the class we set here.
+  useEffect(() => {
+    const applyActiveBeat = (beat: number): void => {
+      const nextIndex = totalBeats.findIndex(
+        (_, i) => 1 + i * subdivision === beat,
+      );
+      const prevIndex = activeIndexRef.current;
+
+      if (prevIndex !== -1 && prevIndex !== nextIndex) {
+        dotRefs.current[prevIndex]?.classList.remove('active');
+      }
+      if (nextIndex !== -1) {
+        dotRefs.current[nextIndex]?.classList.add('active');
+      }
+      activeIndexRef.current = nextIndex;
+    };
+
+    applyActiveBeat(beatStore.get());
+
+    return beatStore.subscribe(applyActiveBeat);
+  }, [beatStore, totalBeats, subdivision, dots]);
 
   return (
     <>

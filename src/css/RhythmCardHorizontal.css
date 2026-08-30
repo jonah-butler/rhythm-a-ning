@@ -1,0 +1,56 @@
+.rhythm-card__horizontal {
+  border: 2px solid #2e2e2e;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease;
+
+  .bpm {
+    border-radius: 0.5rem;
+    color: var(--light-purple);
+    background-color: var(--muted-light-purple);
+    padding: 0.5rem;
+    border: 1px solid var(--light-purple);
+  }
+
+  .details-container {
+    width: 100%;
+  }
+
+  .details {
+    display: flex;
+    flex-direction: column;
+    margin-left: 1rem;
+
+    .title {
+      font-weight: 600;
+    }
+
+    .settings {
+      display: flex;
+      font-size: 13px;
+    }
+
+    .description {
+      font-size: 13px;
+    }
+  }
+
+  .actions-container {
+    width: 66%;
+    display: flex;
+    justify-content: flex-end;
+    .actions {
+      display: flex;
+      font-size: 12px;
+      gap: 0.5rem;
+    }
+  }
+}
+
+.rhythm-card__horizontal:hover {
+  border: 2px solid var(--pink-purple);
+  opacity: 0.9;
+  box-shadow: 0px 0px 20px 1px rgba(248, 33, 173, 0.35);
+}

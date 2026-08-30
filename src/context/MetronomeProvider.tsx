@@ -2,20 +2,18 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { beatCountData, subdivisionData } from '../data';
 import { parseMetronomeQueryParams } from '../helpers/metronome.helpers';
-import { generateUUID } from '../services/rhythm.services';
+import { rhythmFingerprint } from '../services/rhythm.services';
 import { Sound } from '../timing_engine/oscillator.types';
 import { Subdivisions } from '../timing_engine/types';
-import { DefaultSection, type RhythmBlock } from './BuilderContext.types';
 import { MetronomeBuilderContext } from './MetronomeContext';
+import { type RhythmSlim } from './MetronomeContext.types';
 
-function buildInitialRhythm(search: string): RhythmBlock {
+function buildInitialRhythm(search: string): RhythmSlim {
   const parsedDefaults = parseMetronomeQueryParams(search);
 
   const beats = parsedDefaults.baseCount
     ? beatCountData[parsedDefaults.baseCount]
     : beatCountData[3];
-
-  console.log(beats);
 
   const subdivision = parsedDefaults.baseSubdivion
     ? subdivisionData[parsedDefaults.baseSubdivion]
@@ -26,13 +24,13 @@ function buildInitialRhythm(search: string): RhythmBlock {
     : (new Array(
         parseInt(beats.value) /
           Subdivisions[subdivision.value as keyof typeof Subdivisions],
-      ).fill(1) as RhythmBlock['state']);
+      ).fill(1) as RhythmSlim['state']);
 
   const sounds = parsedDefaults.beatSounds
     ? parsedDefaults.beatSounds
     : (new Array(state.length).fill([
         Sound.Oscillator,
-      ]) as RhythmBlock['sounds']);
+      ]) as RhythmSlim['sounds']);
 
   const polyBeats = parsedDefaults.polyCount
     ? beatCountData[parsedDefaults.polyCount]
@@ -47,16 +45,16 @@ function buildInitialRhythm(search: string): RhythmBlock {
     : (new Array(
         parseInt(polyBeats.value) /
           Subdivisions[polySubdivision.value as keyof typeof Subdivisions],
-      ).fill(1) as RhythmBlock['polyState']);
+      ).fill(1) as RhythmSlim['polyState']);
 
   const polySounds = parsedDefaults.polyBeatSound
     ? parsedDefaults.polyBeatSound
     : (new Array(polyState.length).fill([
         Sound.HiHat,
-      ]) as RhythmBlock['polySounds']);
+      ]) as RhythmSlim['polySounds']);
 
   return {
-    id: generateUUID(),
+    id: '',
     bpm: parsedDefaults.bpm ? parsedDefaults.bpm : 60,
     measures: 1,
     subdivision,
@@ -68,32 +66,76 @@ function buildInitialRhythm(search: string): RhythmBlock {
     polySubdivision,
     polyState,
     polySounds,
-    section: DefaultSection,
     name: '',
+    createdAt: null,
+    updatedAt: null,
   };
 }
 
 export function MetronomeProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
-  const [rhythm, setRhythmState] = useState<RhythmBlock>(() =>
+  const [rhythm, setRhythmState] = useState<RhythmSlim>(() =>
     buildInitialRhythm(location.search),
   );
+  // the baseline the current rhythm is compared against. state rather than a
+  // ref so that flipping back to clean actually re-renders the consumers
+  const [savedFingerprint, setSavedFingerprint] = useState(() =>
+    rhythmFingerprint(rhythm),
+  );
+  const fingerprint = useMemo(() => rhythmFingerprint(rhythm), [rhythm]);
+  const settingsChanged = fingerprint !== savedFingerprint;
 
-  console.log('rhythm:', rhythm);
+  // a counter rather than the rhythm id: loading the same rhythm twice, or
+  // reloading one the user has since edited, still has to re-apply
+  const [loadToken, setLoadToken] = useState(0);
 
-  const setRhythm = useCallback((next: RhythmBlock) => {
+  const setRhythm = useCallback((next: RhythmSlim) => {
     setRhythmState(next);
+    // a freshly loaded rhythm is clean by definition
+    setSavedFingerprint(rhythmFingerprint(next));
+    setLoadToken((token) => token + 1);
   }, []);
 
-  const updateRhythm = useCallback((patch: Partial<RhythmBlock>) => {
+  const updateRhythm = useCallback((patch: Partial<RhythmSlim>) => {
     setRhythmState((prev) => ({ ...prev, ...patch }));
   }, []);
 
-  const isSavedRhythm = useCallback(() => rhythm.id === '', [rhythm.id]);
+  /**
+   * Re-baselines after a successful save. Closes over the fingerprint from the
+   * render that queued the save, which is exactly the state that was sent.
+   */
+  const markRhythmSaved = useCallback(() => {
+    setSavedFingerprint(fingerprint);
+  }, [fingerprint]);
+
+  const generateDefaultMetronome = useCallback(
+    () => buildInitialRhythm(''),
+    [],
+  );
+
+  const isSavedRhythm = useCallback(() => rhythm.id !== '', [rhythm.id]);
 
   const value = useMemo(
-    () => ({ rhythm, setRhythm, updateRhythm, isSavedRhythm }),
-    [rhythm, setRhythm, updateRhythm, isSavedRhythm],
+    () => ({
+      rhythm,
+      loadToken,
+      settingsChanged,
+      setRhythm,
+      updateRhythm,
+      markRhythmSaved,
+      isSavedRhythm,
+      generateDefaultMetronome,
+    }),
+    [
+      rhythm,
+      loadToken,
+      settingsChanged,
+      setRhythm,
+      updateRhythm,
+      markRhythmSaved,
+      isSavedRhythm,
+      generateDefaultMetronome,
+    ],
   );
 
   return (

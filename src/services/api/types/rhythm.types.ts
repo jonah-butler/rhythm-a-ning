@@ -1,3 +1,4 @@
+import type { Sound } from '../../../timing_engine/oscillator.types';
 import type { BeatState } from '../../../timing_engine/rhythm.types';
 
 export enum Subdivision {
@@ -32,28 +33,52 @@ export type CreateRhythmBody = {
   state: BeatState[];
   name: string;
   description: string;
-  level: RhythmLevel;
-  sounds: BeatState[][];
+  // level: RhythmLevel;
+  sounds: Sound[][];
 } & (CreateMonoRhythmBody | CreatePolyRhythmBody);
 
 export type CreateMonoRhythmBody = {
-  type: RhythmType.Mono;
+  rhythmType: RhythmType.Mono;
 };
 
 export type CreatePolyRhythmBody = {
-  type: RhythmType.Poly;
+  rhythmType: RhythmType.Poly;
   polyBeats: number;
   polyState: BeatState[];
-  polySounds: BeatState[][];
-  PolySubdivision: Subdivision;
+  polySounds: Sound[][];
+  polySubdivision: Subdivision;
 };
 
-/**
- * 	PolyBeats       *int              `json:"polyBeats"`
-	PolyState       []int64           `json:"polyState"`
-	PolySounds      JSONBSounds       `json:"polySounds"`
-	PolySubdivision *SubdivisionTypes `json:"polySubdivision"`
- */
+export type RhythmResponse = {
+  rhythmType: RhythmType;
+  bpm: number;
+  beats: number;
+  measures: number;
+  sounds: Sound[][];
+  subdivision: Subdivision;
+  state: BeatState[];
+  name: string;
+  level: null;
+  description: string;
+  polyBeats: number | null;
+  polyState: BeatState[] | null;
+  polySounds: Sound[][] | null;
+  polySubdivision: Subdivision | null;
+  id: string;
+  isPoly: boolean;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type GetRhythmsResponse = {
+  rhythms: RhythmResponse[];
+  total: number;
+};
+
+export type CreateRhythmResponse = {
+  rhythm: RhythmResponse;
+};
 
 export type SubdivisionResponse = {
   subdivisionId: number;

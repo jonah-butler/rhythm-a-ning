@@ -43,7 +43,7 @@ export const verifyUser = async (token: string): Promise<boolean> => {
   try {
     const response = await fetch(`${url}/verify`, {
       method: 'POST',
-      ...defaultHeaders,
+      ...defaultHeaders(),
       body: JSON.stringify({ token }),
     });
 

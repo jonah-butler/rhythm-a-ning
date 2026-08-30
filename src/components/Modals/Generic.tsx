@@ -35,16 +35,22 @@ export default function Modal({ children, size, close }: ModalProps) {
 
 type ModalBodyProps = {
   children: ReactNode;
+  subheader?: string;
   onClose?: () => void;
 };
 
-Modal.Header = function Header({ children, onClose }: ModalBodyProps) {
+Modal.Header = function Header({
+  children,
+  onClose,
+  subheader,
+}: ModalBodyProps) {
   return (
     <section className="modal-header mb-8">
       <div onClick={onClose} className="modal-close">
         &times;
       </div>
       <h2>{children}</h2>
+      <p className="color-secondary font-size-14">{subheader}</p>
     </section>
   );
 };
@@ -58,7 +64,7 @@ Modal.SubHeader = function Header({ children }: ModalBodyProps) {
 };
 
 Modal.Body = function Body({ children }: ModalBodyProps) {
-  return <section>{children}</section>;
+  return <section className="modal-body">{children}</section>;
 };
 
 Modal.Footer = function Body({ children }: ModalBodyProps) {

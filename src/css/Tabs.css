@@ -1,9 +1,14 @@
 .tabs {
-  max-width: 390px;
+  min-width: 330px;
+  max-width: 550px;
   border-radius: 0.75rem;
   border: 1px solid #2e2e2e;
   background-color: var(--medium-black);
-  margin-bottom: 1rem;
+  margin: 0 1rem 1rem 1rem;
+}
+
+.tabs.full {
+  max-width: 100%;
 }
 
 .tabs__inner-container {
@@ -13,6 +18,13 @@
 .tab-list {
   display: flex;
   justify-content: space-between;
+
+  &.sticky {
+    position: sticky;
+    top: -35px;
+    background-color: var(--medium-black);
+    z-index: 1;
+  }
 }
 
 .tab-panel {
@@ -30,16 +42,21 @@
   margin-right: 10px;
   border: none;
   flex: 1;
+  border-bottom: 2px solid transparent;
 }
+
 button.tab-button.active {
   outline: none;
-  border-bottom: 3px solid #f821ad;
+  border-bottom: 2px solid #f821ad;
   border-radius: 0;
 
   svg {
+    stroke: #f821ad;
     path {
-      fill: #f821ad;
       stroke: #f821ad;
+    }
+    g {
+      fill: #f821ad;
     }
   }
 }
@@ -49,7 +66,7 @@ button.tab-button:hover {
   border-top: transparent;
   border-left: transparent;
   border-right: transparent;
-  border-bottom: 3px solid #f821ad;
+  border-bottom: 2px solid #f821ad;
   border-radius: 0;
 }
 
@@ -58,7 +75,6 @@ button.tab-button:hover {
   width: auto;
 
   path {
-    fill: white;
     stroke: white;
   }
 }

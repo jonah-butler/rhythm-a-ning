@@ -164,6 +164,13 @@ button.outline {
   outline: 1px solid #f821ad;
 }
 
+button.emphasis {
+  color: var(--pink-purple);
+  > svg {
+    color: var(--pink-purple);
+  }
+}
+
 button.outline:hover {
   background-color: var(--pink-purple);
 }
@@ -292,6 +299,10 @@ button.btn-text {
 
 .height-100 {
   height: 100%;
+}
+
+.height-4 {
+  height: 4rem;
 }
 
 .flex-dir-col {

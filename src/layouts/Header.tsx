@@ -3,7 +3,7 @@ import { MenuPage, MenuPageDescription } from '../context/MenuContext.types';
 import { useMenuContext } from '../context/useMenuContext';
 import '../css/Header.css';
 import BuilderHeader from './header/BuilderHeader';
-import MetronomeHeader from './header/MetronomeHeader';
+import MetronomeHeader from './header/MetronomeHeader/MetronomeHeader';
 
 export default function Header() {
   const navigate = useNavigate();

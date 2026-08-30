@@ -1,0 +1,10 @@
+.popover {
+  width: fit-content;
+  height: fit-content;
+  position: absolute;
+  z-index: 100;
+  border: 1px solid var(--light-gray);
+  padding: 1rem;
+  background-color: var(--light-black);
+  border-radius: 0.5rem;
+}

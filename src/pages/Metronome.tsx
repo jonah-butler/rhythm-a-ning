@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import '../App.css';
-import BeatGridSettings from '../assets/icons/beat-grid-settings.svg?react';
-import LibrarySettings from '../assets/icons/folder.svg?react';
+import GridIcon from '../assets/icons/grid.svg?react';
 import ShareIcon from '../assets/icons/share.svg?react';
-import SoundSettings from '../assets/icons/sound-settings.svg?react';
+import SoundWaveIcon from '../assets/icons/soundwave.svg?react';
 import Display from '../components/Display';
 import Dropdown, { type DropdownOptions } from '../components/Dropdown';
 import RhythmState from '../components/RhythmState';
@@ -19,11 +18,10 @@ import {
   getBeatSoundState,
   getBeatState,
   getSubdivision,
-  Rhythms,
-  RhythmsData,
 } from '../services/rhythm.services';
 import { loadSounds } from '../services/sound.services';
 import { releaseWakeLock, requestWakeLock } from '../services/wakelock';
+import { baseBeatStore, polyBeatStore } from '../timing_engine/beatStore';
 import { Conductor } from '../timing_engine/conductor';
 import { SoundPlayer } from '../timing_engine/oscillator';
 import { PlayerType, Sound } from '../timing_engine/oscillator.types';
@@ -38,7 +36,7 @@ export default function Metronome() {
    * (shared with MetronomeHeader)
    * ++++++++++++++++++++++++
    */
-  const { rhythm, updateRhythm } = useMetronomeBuilderContext();
+  const { rhythm, loadToken, updateRhythm } = useMetronomeBuilderContext();
   const {
     bpm,
     subdivision,
@@ -87,8 +85,6 @@ export default function Metronome() {
 
   const beatCountRef = useRef(beatCount);
   const subdivisionRef = useRef(subdivision);
-  // emitted from rhythm instance
-  const [currentBeat, setCurrentBeat] = useState(1);
 
   //beat state
   const totalBeatsRef = useRef<BeatState[]>(totalBeats);
@@ -108,8 +104,6 @@ export default function Metronome() {
     gain: 0.5,
   });
   const polySubdivisionRef = useRef(polySubdivision);
-  // emitted from polyrhythm instance
-  const [polyBeat, setPolyBeat] = useState(1);
 
   const totalPolyBeatsRef = useRef<BeatState[]>(totalPolyBeats);
 
@@ -141,6 +135,44 @@ export default function Metronome() {
     bpmRef.current = bpm;
     isRunningRef.current = isRunning;
   }, [bpm, isRunning]);
+
+  /**
+   * +++++++++++++++
+   * EFFECT:
+   * a whole rhythm was loaded (library, preset, save response). refreshes the
+   * refs the engine callbacks read from, then tears the conductor down to zero
+   * rhythms so the build effect below re-runs its guard and rebuilds from the
+   * new context state. declared first so it commits before that rebuild.
+   * +++++++++++++++
+   */
+  const appliedLoadToken = useRef(loadToken);
+  useEffect(() => {
+    if (appliedLoadToken.current === loadToken) return;
+    appliedLoadToken.current = loadToken;
+
+    if (!conductor.current) return;
+
+    // refs first -- rhythm event callbacks read these, not render values
+    beatCountRef.current = rhythm.beats;
+    subdivisionRef.current = rhythm.subdivision;
+    totalBeatsRef.current = rhythm.state;
+    soundsRef.current = rhythm.sounds;
+    polySubdivisionRef.current = rhythm.polySubdivision;
+    totalPolyBeatsRef.current = rhythm.polyState;
+    polySoundsRef.current = rhythm.polySounds;
+    bpmRef.current = rhythm.bpm;
+
+    setBeatCountGhost(null);
+    setPolyBeatCountGhost(null);
+
+    // stops playback, drops listeners, resets numberOfRhythms to 0
+    conductor.current.removeRhythms();
+    conductor.current.updateBPM(rhythm.bpm);
+
+    releaseWakeLock();
+    baseBeatStore.set(1);
+    polyBeatStore.set(1);
+  }, [loadToken, rhythm]);
 
   /**
    * +++++++++++
@@ -191,7 +223,7 @@ export default function Metronome() {
 
       // base rhythm event callbacks
       const updateBeatChange = (beat: number) => {
-        setCurrentBeat(beat);
+        baseBeatStore.set(beat);
       };
       const updateTotalBeatChange = (
         totalBeats: number,
@@ -271,7 +303,7 @@ export default function Metronome() {
     if (usePolyrhythm && conductor.current.numberOfRhythms !== 2) {
       // poly rhythm event callbacks
       const updateBeatChange = (beat: number) => {
-        setPolyBeat(beat);
+        polyBeatStore.set(beat);
       };
       const updateTotalBeatChange = (
         totalBeats: number,
@@ -361,6 +393,7 @@ export default function Metronome() {
     sounds,
     polySounds,
     updateRhythm,
+    loadToken,
   ]);
 
   // cleanup only
@@ -373,6 +406,11 @@ export default function Metronome() {
       }
 
       releaseWakeLock();
+
+      // stores outlive the page, so reset them or a remount restores the
+      // highlight to whatever beat playback happened to stop on
+      baseBeatStore.set(1);
+      polyBeatStore.set(1);
     };
   }, []);
 
@@ -386,24 +424,6 @@ export default function Metronome() {
       releaseWakeLock();
     } else {
       conductor.current.start();
-
-      // logging block state
-      // const block: RhythmBlock = {
-      //   id: '1',
-      //   bpm,
-      //   measures: 1,
-      //   subdivision,
-      //   beats: beatCount,
-      //   usePoly: usePolyrhythm,
-      //   state: totalBeats,
-      //   sounds,
-      //   polyBeats: polyBeatCount,
-      //   polySubdivision,
-      //   polyState: totalPolyBeats,
-      //   polySounds,
-      // };
-
-      // console.log('BLOCK: ', block);
       requestWakeLock();
     }
   }
@@ -640,7 +660,6 @@ export default function Metronome() {
     if (!usePoly && conductor.current) {
       conductor.current.getRhythm(1).kill();
       conductor.current.removeRhythm(1);
-      // setPolyBeat(1);
     }
   }
 
@@ -718,14 +737,19 @@ export default function Metronome() {
   };
 
   // move to hook
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'visible') {
-      if (conductor.current) {
-        conductor.current.stop();
-      }
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') return;
+
+      conductor.current?.stop();
       releaseWakeLock();
-    }
-  });
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, []);
 
   /**
    * ++++++++++++++++++++++++++
@@ -733,31 +757,21 @@ export default function Metronome() {
    * ++++++++++++++++++++++++++
    */
 
-  const setLibraryRhythm = (rhythm: Rhythms): void => {
-    const preset = RhythmsData[rhythm];
+  // const setLibraryRhythm = (preset: Rhythms): void => {
+  //   const data = RhythmsData[preset];
 
-    if (isRunning && preset.beats !== beatCount) {
-      toggleMetronome();
-    }
-    // beat count update
-    updateBeatCount(preset.beats.value);
-
-    // subdivision update
-    updateSubdivision(preset.subdivision.value);
-
-    // poly updates -- silence for now
-    if (usePolyrhythm) {
-      updateUsePolyrhythm(preset.usePoly);
-    }
-    // bpm updates
-    bpmRef.current = preset.bpm;
-    updateRhythm({ bpm: preset.bpm, state: preset.state });
-    updateBPM(bpmRef.current);
-
-    // state updates
-    totalBeatsRef.current = preset.state;
-    conductor.current?.getRhythm(0).resetState(preset.state);
-  };
+  //   // a whole-rhythm replacement: the load effect stops playback, refreshes
+  //   // the refs and rebuilds the engine, poly teardown included
+  //   setRhythm({
+  //     ...rhythm,
+  //     bpm: data.bpm,
+  //     subdivision: data.subdivision,
+  //     beats: data.beats,
+  //     usePoly: data.usePoly,
+  //     state: data.state,
+  //     sounds: getBeatSoundState(data.state.length, sounds, Sound.Oscillator),
+  //   });
+  // };
 
   const generateShareableUrl = async (): Promise<void> => {
     const url = `${window.location.origin}${window.location.pathname}?`;
@@ -816,9 +830,7 @@ export default function Metronome() {
           isRunning={isRunning}
           bpm={bpm}
           beats={parseInt(beatCount.value)}
-          currentBeat={currentBeat}
           polyrhythm={parseInt(polyBeatCount.value)}
-          polyBeat={polyBeat}
           usePoly={usePolyrhythm}
           togglePlayback={toggleMetronome}
           updateBPM={updateBPM}
@@ -863,7 +875,7 @@ export default function Metronome() {
 
       {/* Metronome Settings */}
       <Tabs index={tab} updateTab={setTab}>
-        <Tabs.Tab label={<BeatGridSettings />}>
+        <Tabs.Tab label={<GridIcon />}>
           <div className="flex">
             {/* Beat Count */}
             <section className="flex width-100 space-between align-center">
@@ -1041,7 +1053,7 @@ export default function Metronome() {
             ) : null}
           </div>
         </Tabs.Tab>
-        <Tabs.Tab label={<SoundSettings />}>
+        <Tabs.Tab label={<SoundWaveIcon />}>
           {/* Frequency Sliders */}
           <div className="flex">
             <section className="flex width-100 space-between align-center">
@@ -1219,71 +1231,75 @@ export default function Metronome() {
           </div>
         </Tabs.Tab>
 
-        <Tabs.Tab label={<LibrarySettings />}>
-          <div className="flex">
-            <section className="flex width-100 space-between align-center">
-              <div className="text-light text-left font-size-13 flex-1">
-                son clave
-              </div>
-              <div className="flex flex-col f-gap2">
-                <div className="flex flex-1">
-                  <button
-                    onClick={() => setLibraryRhythm(Rhythms.SonClave23)}
-                    className="filled small full"
-                  >
-                    2:3 son clave
-                  </button>
+        {/* <Tabs.Tab label={<LibrarySettings />}>
+          {!isAuthenticated ? (
+            <div className="flex">
+              <section className="flex width-100 space-between align-center">
+                <div className="text-light text-left font-size-13 flex-1">
+                  son clave
                 </div>
-                <div className="flex flex-1">
-                  <button
-                    onClick={() => setLibraryRhythm(Rhythms.SonClave32)}
-                    className="filled small full"
-                  >
-                    3:2 son clave
-                  </button>
+                <div className="flex flex-col f-gap2">
+                  <div className="flex flex-1">
+                    <button
+                      onClick={() => setLibraryRhythm(Rhythms.SonClave23)}
+                      className="filled small full"
+                    >
+                      2:3 son clave
+                    </button>
+                  </div>
+                  <div className="flex flex-1">
+                    <button
+                      onClick={() => setLibraryRhythm(Rhythms.SonClave32)}
+                      className="filled small full"
+                    >
+                      3:2 son clave
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </section>
+              </section>
 
-            <section className="flex width-100 space-between align-center">
-              <div className="text-light text-left font-size-13 flex-1">
-                rumba clave
-              </div>
-              <div className="flex flex-col f-gap2">
-                <div className="flex flex-1">
-                  <button
-                    onClick={() => setLibraryRhythm(Rhythms.RumbaClave23)}
-                    className="filled small full"
-                  >
-                    2:3 rumba clave
-                  </button>
+              <section className="flex width-100 space-between align-center">
+                <div className="text-light text-left font-size-13 flex-1">
+                  rumba clave
                 </div>
-                <div className="flex flex-1">
-                  <button
-                    onClick={() => setLibraryRhythm(Rhythms.RumbaClave32)}
-                    className="filled small full"
-                  >
-                    3:2 rumba clave
-                  </button>
+                <div className="flex flex-col f-gap2">
+                  <div className="flex flex-1">
+                    <button
+                      onClick={() => setLibraryRhythm(Rhythms.RumbaClave23)}
+                      className="filled small full"
+                    >
+                      2:3 rumba clave
+                    </button>
+                  </div>
+                  <div className="flex flex-1">
+                    <button
+                      onClick={() => setLibraryRhythm(Rhythms.RumbaClave32)}
+                      className="filled small full"
+                    >
+                      3:2 rumba clave
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </section>
+              </section>
 
-            <section className="flex width-100 space-between align-center">
-              <div className="text-light text-left font-size-13 flex-1">
-                tresillo
-              </div>
-              <div className="flex flex-1">
-                <button
-                  onClick={() => setLibraryRhythm(Rhythms.Tresillo)}
-                  className="filled small full"
-                >
+              <section className="flex width-100 space-between align-center">
+                <div className="text-light text-left font-size-13 flex-1">
                   tresillo
-                </button>
-              </div>
-            </section>
-          </div>
-        </Tabs.Tab>
+                </div>
+                <div className="flex flex-1">
+                  <button
+                    onClick={() => setLibraryRhythm(Rhythms.Tresillo)}
+                    className="filled small full"
+                  >
+                    tresillo
+                  </button>
+                </div>
+              </section>
+            </div>
+          ) : (
+            <div className="flex"></div>
+          )}
+        </Tabs.Tab> */}
       </Tabs>
 
       <section className="settings-row">
