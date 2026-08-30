@@ -72,7 +72,7 @@ button.tab-button:hover {
 
 .tab-button > svg {
   max-height: 30px;
-  width: auto;
+  width: 30px;
 
   path {
     stroke: white;
