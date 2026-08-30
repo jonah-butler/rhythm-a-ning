@@ -69,3 +69,66 @@
 .modal-footer {
   margin-top: 2rem;
 }
+
+@media (max-width: 768px) {
+  .modal.lg {
+    position: fixed;
+    width: calc(100vw - 4rem);
+    min-width: 0;
+    max-width: calc(100vw - 4rem);
+    max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - 2rem);
+    padding: 1rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .modal.lg .modal-close {
+    top: 10px;
+    right: 12px;
+  }
+
+  .modal.lg .modal-footer {
+    margin-top: 1.5rem;
+  }
+
+  /* tabs carry a 330px min-width + side margins that overflow a phone-width modal */
+  .modal.lg .tabs {
+    min-width: 0;
+    margin: 0 0 1rem 0;
+  }
+
+  .modal.lg .tabs__inner-container,
+  .modal.lg .tab-panel {
+    padding: 0.75rem 0.5rem;
+  }
+
+  /* keep the bpm box beside the title/description, wrap the actions below */
+  .modal.lg .rhythm-card__horizontal {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 0.75rem;
+  }
+
+  .modal.lg .rhythm-card__horizontal .bpm-container {
+    flex: 0 0 auto;
+  }
+
+  /* min-width: 0 lets long titles wrap instead of pushing the row wider */
+  .modal.lg .rhythm-card__horizontal .details-container {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .modal.lg .rhythm-card__horizontal .title,
+  .modal.lg .rhythm-card__horizontal .description {
+    overflow-wrap: anywhere;
+  }
+
+  .modal.lg .rhythm-card__horizontal .actions-container {
+    flex: 1 0 100%;
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

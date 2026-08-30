@@ -42,7 +42,7 @@ export default function RhythmCardHorizontal({
 
   return (
     <section className="rhythm-card__horizontal">
-      <div>
+      <div className="bpm-container">
         <section className="bpm">{rhythm.bpm}</section>
       </div>
       <div className="details-container">

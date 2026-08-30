@@ -5,6 +5,7 @@
   display: flex;
   align-items: center;
   transition: all 0.2s ease;
+  position: relative;
 
   .bpm {
     border-radius: 0.5rem;
