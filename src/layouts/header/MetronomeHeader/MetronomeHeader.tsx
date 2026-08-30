@@ -201,24 +201,28 @@ export default function MetronomeHeader() {
                           />
                         ))}
                       </section>
-                    ) : null}
+                    ) : (
+                      'No saved rhythms available'
+                    )}
 
-                    <section className="flex mt-4 space-between">
-                      <button
-                        onClick={() => setOffset((prev) => (prev -= 1))}
-                        disabled={LIMIT * offset === 0}
-                        className="outline small"
-                      >
-                        previous
-                      </button>
-                      <button
-                        onClick={() => setOffset((prev) => (prev += 1))}
-                        disabled={total - LIMIT * offset <= LIMIT}
-                        className="outline small"
-                      >
-                        next
-                      </button>
-                    </section>
+                    {rhythms.length > 0 ? (
+                      <section className="flex mt-4 space-between">
+                        <button
+                          onClick={() => setOffset((prev) => (prev -= 1))}
+                          disabled={LIMIT * offset === 0}
+                          className="outline small"
+                        >
+                          previous
+                        </button>
+                        <button
+                          onClick={() => setOffset((prev) => (prev += 1))}
+                          disabled={total - LIMIT * offset <= LIMIT}
+                          className="outline small"
+                        >
+                          next
+                        </button>
+                      </section>
+                    ) : null}
                   </section>
                 </Tabs.Tab>
                 <Tabs.Tab
@@ -228,7 +232,7 @@ export default function MetronomeHeader() {
                     </span>
                   }
                 >
-                  <section>hey</section>
+                  <section>Global rhythms coming soon</section>
                 </Tabs.Tab>
               </Tabs>
             </section>
