@@ -35,9 +35,15 @@ export default function RhythmState({
     if (menuCloseTimer.current) clearTimeout(menuCloseTimer.current);
   };
 
-  const scheduleMenuClose = () => {
+  // Only closes the menu it was scheduled for. On touch, tapping a different
+  // trigger fires a synthetic mouseleave on the previously tapped sound item,
+  // which schedules a close *after* the new menu has already opened.
+  const scheduleMenuClose = (index: number) => {
     cancelMenuClose();
-    menuCloseTimer.current = setTimeout(() => setOpenMenuIndex(null), 350);
+    menuCloseTimer.current = setTimeout(
+      () => setOpenMenuIndex((prev) => (prev === index ? null : prev)),
+      350,
+    );
   };
 
   useEffect(() => {
@@ -69,6 +75,7 @@ export default function RhythmState({
   }
 
   const toggleMenu = (flatIndex: number) => {
+    cancelMenuClose();
     setOpenMenuIndex((prev) => (prev === flatIndex ? null : flatIndex));
   };
 
@@ -119,7 +126,7 @@ export default function RhythmState({
                     isOpen={openMenuIndex === flatIndex}
                     activeSounds={sounds[flatIndex]}
                     onKeepOpen={cancelMenuClose}
-                    onRequestClose={scheduleMenuClose}
+                    onRequestClose={() => scheduleMenuClose(flatIndex)}
                     onClick={(sound) => {
                       onSoundChange(sound, flatIndex);
                     }}
