@@ -2,11 +2,16 @@ import { v4 as uuidv4 } from 'uuid';
 import type { DropdownOptions } from '../components/Dropdown';
 import { type RhythmBlock } from '../context/BuilderContext.types';
 import { type RhythmSlim } from '../context/MetronomeContext.types';
-import { beatCountData, subdivisionData } from '../data';
+import { beatCountData } from '../data';
 import { Sound } from '../timing_engine/oscillator.types';
 import { type BeatState } from '../timing_engine/rhythm.types';
-import { Subdivisions } from '../timing_engine/types';
 import type { Subdivision } from './api/types/rhythm.types';
+import {
+  buildDefaultBeatState,
+  resolveSubdivisions,
+  toSubdivisionNames,
+} from './subdivision';
+import { SubdivisionKeyValue } from './subdivision/types';
 import {
   RhythmType,
   type CreateRhythmBody,
@@ -15,13 +20,8 @@ import {
 
 export type RhythmBlockSlim = Pick<
   RhythmBlock,
-  'bpm' | 'subdivision' | 'beats' | 'usePoly' | 'state'
+  'bpm' | 'subdivisions' | 'beats' | 'usePoly' | 'state'
 >;
-
-// DELETE
-export const getSubdivision = (subdivisionKey: string): number => {
-  return Subdivisions[subdivisionKey as keyof typeof Subdivisions];
-};
 
 const FOUR_BEATS = beatCountData[3];
 
@@ -29,57 +29,12 @@ export const getBeatCount = (beats: number | null): DropdownOptions => {
   return beatCountData.find((b) => b.value === beats?.toString()) || FOUR_BEATS;
 };
 
-// DELETE
-export const getSubdivisionData = (
-  key: Subdivision | null,
-): DropdownOptions => {
-  return (
-    subdivisionData.find((option) => option.value === key) ?? subdivisionData[0]
-  );
-};
-
-export const getBeatState = (
-  beats: number,
-  subdivisionKey: string | number,
-): BeatState[] => {
-  let subdivision: number;
-  if (typeof subdivisionKey === 'string') {
-    subdivision = getSubdivision(subdivisionKey); // update
-  } else {
-    subdivision = subdivisionKey;
-  }
-
-  return new Array(beats / subdivision).fill(1);
-};
-
-export const getSubdivionNew = (subdivision: string | Subdivision): number => {
-  return Subdivisions[subdivision as keyof typeof Subdivisions];
-};
-
-export const buildSubdivision = (
-  beats: number,
-  previousSub: DropdownOptions[],
-  defaultSub = Subdivisions.base,
-): number[] => {
-  const subs = [];
-  for (let i = 0; i < beats; i++) {
-    const sub = previousSub[i];
-    if (sub) {
-      subs.push(sub);
-    } else {
-      subs.push(defaultSub);
-    }
-  }
-
-  return subs;
-};
-
 export const buildBeatState = (
   beats: number,
   previousState: BeatState[],
 ): BeatState[] => {
   if (beats < previousState.length) {
-    return previousState.splice(0, beats);
+    return previousState.slice(0, beats);
   }
   const beatDiff = beats - previousState.length;
   return [...previousState, ...new Array(beatDiff).fill(1)];
@@ -126,35 +81,35 @@ export enum Rhythms {
 export const RhythmsData: Record<Rhythms, RhythmBlockSlim> = {
   [Rhythms.SonClave23]: {
     bpm: 120,
-    subdivision: sanitizeOption(subdivisionData[3]),
+    subdivisions: new Array(4).fill(SubdivisionKeyValue.quadruplet),
     beats: beatCountData[3],
     usePoly: false,
     state: [0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0],
   },
   [Rhythms.SonClave32]: {
     bpm: 120,
-    subdivision: sanitizeOption(subdivisionData[3]),
+    subdivisions: new Array(4).fill(SubdivisionKeyValue.quadruplet),
     beats: beatCountData[3],
     usePoly: false,
     state: [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0],
   },
   [Rhythms.RumbaClave23]: {
     bpm: 120,
-    subdivision: sanitizeOption(subdivisionData[3]),
+    subdivisions: new Array(4).fill(SubdivisionKeyValue.quadruplet),
     beats: beatCountData[3],
     usePoly: false,
     state: [0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1],
   },
   [Rhythms.RumbaClave32]: {
     bpm: 120,
-    subdivision: sanitizeOption(subdivisionData[3]),
+    subdivisions: new Array(4).fill(SubdivisionKeyValue.quadruplet),
     beats: beatCountData[3],
     usePoly: false,
     state: [1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0],
   },
   [Rhythms.Tresillo]: {
     bpm: 120,
-    subdivision: sanitizeOption(subdivisionData[1]),
+    subdivisions: new Array(4).fill(SubdivisionKeyValue.duplet),
     beats: beatCountData[3],
     usePoly: false,
     state: [1, 0, 0, 1, 0, 0, 1, 0],
@@ -176,7 +131,7 @@ export function rhythmFingerprint(rhythm: RhythmSlim): string {
     rhythm.bpm,
     rhythm.measures,
     rhythm.beats.value,
-    rhythm.subdivision.value,
+    rhythm.subdivisions,
     rhythm.state,
     rhythm.sounds,
     rhythm.usePoly,
@@ -185,7 +140,7 @@ export function rhythmFingerprint(rhythm: RhythmSlim): string {
     rhythm.usePoly
       ? [
           rhythm.polyBeats.value,
-          rhythm.polySubdivision.value,
+          rhythm.polySubdivisions,
           rhythm.polyState,
           rhythm.polySounds,
         ]
@@ -199,6 +154,7 @@ export function rhythmToSlim(rhythm: RhythmResponse): RhythmSlim {
     bpm,
     measures,
     subdivision,
+    subdivisions,
     beats,
     isPoly,
     state,
@@ -207,14 +163,26 @@ export function rhythmToSlim(rhythm: RhythmResponse): RhythmSlim {
     description,
     polyBeats,
     polySubdivision,
+    polySubdivisions,
     polySounds,
     polyState,
     updatedAt,
     createdAt,
   } = rhythm;
 
-  const polySubdivisionWithDefault = getSubdivisionData(polySubdivision);
+  const beatsWithDefault = getBeatCount(beats);
   const polyBeatsWithDefault = getBeatCount(polyBeats);
+
+  const resolvedSubdivisions = resolveSubdivisions(
+    subdivisions,
+    subdivision,
+    +beatsWithDefault.value,
+  );
+  const resolvedPolySubdivisions = resolveSubdivisions(
+    polySubdivisions,
+    polySubdivision,
+    +polyBeatsWithDefault.value,
+  );
 
   const normalizedMeasure = measures ? measures : 1;
 
@@ -222,26 +190,29 @@ export function rhythmToSlim(rhythm: RhythmResponse): RhythmSlim {
     id,
     bpm,
     measures: normalizedMeasure,
-    subdivision: getSubdivisionData(subdivision),
-    beats: getBeatCount(beats),
+    subdivisions: resolvedSubdivisions,
+    beats: beatsWithDefault,
     usePoly: isPoly,
     state,
     sounds,
     name,
     description,
     polyBeats: polyBeatsWithDefault,
-    polySubdivision: polySubdivisionWithDefault,
+    polySubdivisions: resolvedPolySubdivisions,
     polySounds:
       polySounds ?? getBeatSoundState(+polyBeatsWithDefault.value, []),
-    polyState:
-      polyState ??
-      getBeatState(
-        +polyBeatsWithDefault.value,
-        polySubdivisionWithDefault.value,
-      ),
+    polyState: polyState ?? buildDefaultBeatState(resolvedPolySubdivisions),
     createdAt,
     updatedAt,
   };
+}
+
+/**
+ * legacy: the API's single `subdivision` field can only describe one value, so
+ * a mixed bar sends its first beat. Remove once the API reads `subdivisions`.
+ */
+function toLegacySubdivision(subs: number[]): Subdivision {
+  return toSubdivisionNames(subs)[0] as string as Subdivision;
 }
 
 export function createRhythmPayload(
@@ -253,7 +224,8 @@ export function createRhythmPayload(
     beats: +rhythm.beats.value,
     measures: rhythm.measures,
     sounds: rhythm.sounds,
-    subdivision: rhythm.subdivision.value as Subdivision,
+    subdivisions: toSubdivisionNames(rhythm.subdivisions),
+    subdivision: toLegacySubdivision(rhythm.subdivisions),
     state: rhythm.state,
     name: meta.title,
     description: meta.description,
@@ -274,7 +246,8 @@ export function createRhythmPayload(
       payload.polyBeats = +rhythm.polyBeats.value;
       payload.polyState = rhythm.polyState;
       payload.polySounds = rhythm.polySounds;
-      payload.polySubdivision = rhythm.polySubdivision.value as Subdivision;
+      payload.polySubdivisions = toSubdivisionNames(rhythm.polySubdivisions);
+      payload.polySubdivision = toLegacySubdivision(rhythm.polySubdivisions);
       break;
     default:
       break;

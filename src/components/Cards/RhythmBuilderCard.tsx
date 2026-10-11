@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import CopyIcon from '../../assets/icons/copy.svg?react';
 import DragIcon from '../../assets/icons/drag.svg?react';
 import ExpandIcon from '../../assets/icons/expand.svg?react';
@@ -10,16 +10,27 @@ import TrashIcon from '../../assets/icons/trash.svg?react';
 import { type RhythmBlock } from '../../context/BuilderContext.types';
 import { useRhythmBuilderContext } from '../../context/useBuilderContext';
 import '../../css/RhythmBuilderCard.css';
-import { beatCountData, subdivisionData } from '../../data';
+import { beatCountData } from '../../data';
 import {
+  buildBeatState,
   generateUUID,
   getBeatSoundState,
-  getBeatState,
-  sanitizeOption,
 } from '../../services/rhythm.services';
+import {
+  buildDefaultBeatState,
+  buildSubdivision,
+  calculateTotalBeats,
+  getSubdivision,
+  getSubdivisionPerBeat,
+} from '../../services/subdivision';
+import { subdivisionDataWithEmpty } from '../../services/subdivision/data';
+import {
+  SubdivisionKeyValue,
+  type SubdivisionName,
+} from '../../services/subdivision/types';
 import { Conductor } from '../../timing_engine/conductor';
 import { Sound } from '../../timing_engine/oscillator.types';
-import Dropdown from '../Dropdown';
+import Dropdown, { type DropdownOptions } from '../Dropdown';
 import NumberInput from '../NumberInput';
 import RhythmState from '../RhythmState';
 import Toggle from '../Toggle';
@@ -32,6 +43,14 @@ type RhythmBuilderCardProps = {
   audioCtx: AudioContext | null;
   onChange: () => void;
   onTogglePlayback: (id: string, isPlaying: boolean) => void;
+};
+
+const buildBeatOptions = (beats: number): DropdownOptions[] => {
+  const options: DropdownOptions[] = [{ label: 'all', value: 'all' }];
+  for (let i = 1; i <= beats; i++) {
+    options.push({ label: `${i}`, value: `${i}` });
+  }
+  return options;
 };
 
 export default function RhythmBuilderCard({
@@ -49,6 +68,27 @@ export default function RhythmBuilderCard({
   const [showPolyBeatState, setPolyBeatState] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [expanded, setExpanded] = useState(false);
+
+  const beatOptions = useMemo(
+    () => buildBeatOptions(Number(block.beats.value)),
+    [block.beats],
+  );
+  const polyBeatOptions = useMemo(
+    () => buildBeatOptions(Number(block.polyBeats.value)),
+    [block.polyBeats],
+  );
+
+  const [selectedBeat, setSelectedBeat] = useState(beatOptions[1]);
+  const [polySelectedBeat, setPolySelectedBeat] = useState(polyBeatOptions[1]);
+
+  const subdivisionPerBeat = useMemo(
+    () => getSubdivisionPerBeat(selectedBeat, block.subdivisions),
+    [selectedBeat, block.subdivisions],
+  );
+  const polySubdivisionPerBeat = useMemo(
+    () => getSubdivisionPerBeat(polySelectedBeat, block.polySubdivisions),
+    [polySelectedBeat, block.polySubdivisions],
+  );
 
   useEffect(() => {
     if (cardAudioId !== block.id && isPlaying) {
@@ -93,49 +133,49 @@ export default function RhythmBuilderCard({
     deleteBlock(block.id);
   };
 
-  const updateSubdivision = (newSubdivision: string, isPoly = false): void => {
-    const subdivision = subdivisionData.find(
-      (sub) => sub.value === newSubdivision,
-    );
+  const updateSubdivision = (
+    sub: SubdivisionName | '',
+    isPoly = false,
+  ): void => {
+    const currentSubs = isPoly ? block.polySubdivisions : block.subdivisions;
+    if (sub === '') return;
+
+    const beat = isPoly ? polySelectedBeat : selectedBeat;
+    const newSubdivision = getSubdivision(sub);
+
+    let updatedSubdivisions = [...currentSubs];
+    if (beat.value === 'all') {
+      updatedSubdivisions = updatedSubdivisions.map(() => newSubdivision);
+    } else {
+      updatedSubdivisions[parseInt(beat.value) - 1] = newSubdivision;
+    }
+
+    const newState = buildDefaultBeatState(updatedSubdivisions);
 
     if (isPoly) {
-      if (subdivision) {
-        const newState = getBeatState(
-          Number(block.polyBeats.value),
-          subdivision.value,
-        );
+      const polySounds = getBeatSoundState(
+        newState.length,
+        block.polySounds,
+        Sound.Oscillator,
+      );
 
-        const polySounds = getBeatSoundState(
-          newState.length,
-          block.polySounds,
-          Sound.Oscillator,
-        );
-
-        updateBlock(block.id, {
-          polySubdivision: sanitizeOption(subdivision),
-          polyState: newState,
-          polySounds,
-        });
-      }
+      updateBlock(block.id, {
+        polyState: newState,
+        polySounds,
+        polySubdivisions: updatedSubdivisions,
+      });
     } else {
-      if (subdivision) {
-        const newState = getBeatState(
-          Number(block.beats.value),
-          subdivision.value,
-        );
+      const sounds = getBeatSoundState(
+        newState.length,
+        block.sounds,
+        Sound.Oscillator,
+      );
 
-        const sounds = getBeatSoundState(
-          newState.length,
-          block.sounds,
-          Sound.Oscillator,
-        );
-
-        updateBlock(block.id, {
-          subdivision: sanitizeOption(subdivision),
-          state: newState,
-          sounds,
-        });
-      }
+      updateBlock(block.id, {
+        state: newState,
+        sounds,
+        subdivisions: updatedSubdivisions,
+      });
     }
 
     onChange();
@@ -143,23 +183,58 @@ export default function RhythmBuilderCard({
 
   const updateBeats = (newBeats: string, isPoly = false): void => {
     const beats = beatCountData.find((beat) => beat.value === newBeats);
+    const beatCount = Number(beats?.value);
 
     if (isPoly) {
-      const polyState = getBeatState(
-        Number(beats?.value),
-        block.polySubdivision.value,
+      let defaultSub = SubdivisionKeyValue.base;
+      if (polySelectedBeat.value === 'all' && polySubdivisionPerBeat.value) {
+        defaultSub = getSubdivision(polySubdivisionPerBeat.value);
+      }
+      if (parseInt(polySelectedBeat.value) > beatCount) {
+        setPolySelectedBeat(polyBeatOptions[1]);
+      }
+
+      const polySubdivisions = buildSubdivision(
+        beatCount,
+        block.polySubdivisions,
+        defaultSub,
+      );
+      const polyState = buildBeatState(
+        calculateTotalBeats(polySubdivisions),
+        block.polyState,
       );
       const polySounds = getBeatSoundState(
         polyState.length,
         block.polySounds,
         Sound.Oscillator,
       );
-      updateBlock(block.id, { polyBeats: beats, polyState, polySounds });
+      updateBlock(block.id, {
+        polyBeats: beats,
+        polyState,
+        polySounds,
+        polySubdivisions,
+      });
     } else {
-      const state = getBeatState(Number(beats?.value), block.subdivision.value);
+      let defaultSub = SubdivisionKeyValue.base;
+      if (selectedBeat.value === 'all' && subdivisionPerBeat.value) {
+        defaultSub = getSubdivision(subdivisionPerBeat.value);
+      }
+      if (parseInt(selectedBeat.value) > beatCount) {
+        setSelectedBeat(beatOptions[1]);
+      }
+
+      const subdivisions = buildSubdivision(
+        beatCount,
+        block.subdivisions,
+        defaultSub,
+      );
+      const state = buildBeatState(
+        calculateTotalBeats(subdivisions),
+        block.state,
+      );
       const sounds = getBeatSoundState(state.length, block.sounds);
 
-      updateBlock(block.id, { beats, state, sounds });
+      updateBlock(block.id, { beats, state, sounds, subdivisions });
     }
 
     onChange();
@@ -324,12 +399,25 @@ export default function RhythmBuilderCard({
           <div className="text-light font-size-13 text-left flex-1">
             subdivision
           </div>
-          <div className="flex flex-1">
+          <div className="flex flex-1 f-gap4">
             <Dropdown
-              variant="full"
-              data={subdivisionData}
-              currentValue={block.subdivision}
-              onChange={updateSubdivision}
+              variant="small"
+              data={beatOptions}
+              currentValue={selectedBeat}
+              onChange={(value) => {
+                const option = beatOptions.find(
+                  (option) => option.value === value,
+                );
+                if (option) {
+                  setSelectedBeat(option);
+                }
+              }}
+            />
+            <Dropdown
+              variant="small"
+              data={subdivisionDataWithEmpty}
+              currentValue={subdivisionPerBeat}
+              onChange={(value) => updateSubdivision(value)}
             />
           </div>
         </section>
@@ -366,7 +454,7 @@ export default function RhythmBuilderCard({
           >
             <RhythmState
               onUpdate={(state) => updateBlock(block.id, { state })}
-              beats={block.beats}
+              subdivisions={block.subdivisions}
               disabled={false}
               state={block.state}
               size="sm"
@@ -427,11 +515,25 @@ export default function RhythmBuilderCard({
           <div className="text-light font-size-13 color-pink-purple text-left flex-1">
             subdivision
           </div>
-          <div className="flex flex-1">
+          <div className="flex flex-1 f-gap4">
             <Dropdown
-              variant="full"
-              data={subdivisionData}
-              currentValue={block.polySubdivision}
+              variant="small"
+              data={polyBeatOptions}
+              currentValue={polySelectedBeat}
+              onChange={(value) => {
+                const option = polyBeatOptions.find(
+                  (option) => option.value === value,
+                );
+                if (option) {
+                  setPolySelectedBeat(option);
+                }
+              }}
+              disabled={!block.usePoly}
+            />
+            <Dropdown
+              variant="small"
+              data={subdivisionDataWithEmpty}
+              currentValue={polySubdivisionPerBeat}
               onChange={(value) => updateSubdivision(value, true)}
               disabled={!block.usePoly}
             />
@@ -457,7 +559,7 @@ export default function RhythmBuilderCard({
           <section className="flex flex-col width-100 space-between align-center mb-2 f-gap4">
             <RhythmState
               onUpdate={(state) => updateBlock(block.id, { polyState: state })}
-              beats={block.polyBeats}
+              subdivisions={block.polySubdivisions}
               disabled={!block.usePoly}
               state={block.polyState}
               size="sm"

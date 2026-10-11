@@ -1,11 +1,8 @@
 import { type DropdownOptions } from '../components/Dropdown';
-import { beatCountData, subdivisionData } from '../data';
-import {
-  generateUUID,
-  getBeatSoundState,
-  getBeatState,
-  sanitizeOption,
-} from '../services/rhythm.services';
+import { beatCountData } from '../data';
+import { generateUUID, getBeatSoundState } from '../services/rhythm.services';
+import { buildDefaultBeatState } from '../services/subdivision';
+import { SubdivisionKeyValue } from '../services/subdivision/types';
 import { Sound } from '../timing_engine/oscillator.types';
 import { type BeatState } from '../timing_engine/rhythm.types';
 import type { RhythmBlockStore } from './IndexedDB.types';
@@ -14,13 +11,14 @@ export type RhythmBlock = {
   id: string;
   bpm: number;
   measures: number;
-  subdivision: DropdownOptions;
+  /** One subdivision per beat, e.g. [1, 1/3, 1, 1]. */
+  subdivisions: number[];
   beats: DropdownOptions;
   usePoly: boolean;
   state: BeatState[];
   sounds: Sound[][];
   polyBeats: DropdownOptions;
-  polySubdivision: DropdownOptions;
+  polySubdivisions: number[];
   polyState: BeatState[];
   polySounds: Sound[][];
   section: Section;
@@ -35,7 +33,7 @@ export type Section = DropdownOptions & {
 
 export type PolyState = {
   beats: DropdownOptions;
-  subdivision: DropdownOptions;
+  subdivisions: number[];
   state: BeatState[];
 };
 
@@ -46,18 +44,21 @@ export const DefaultSection: Section = {
   color: undefined,
 };
 
-export const DefaultRhythmBlock = {
+const defaultSubdivisions = new Array(4).fill(SubdivisionKeyValue.base);
+const defaultPolySubdivisions = new Array(3).fill(SubdivisionKeyValue.base);
+
+export const DefaultRhythmBlock: RhythmBlock = {
   id: generateUUID(),
   bpm: 100,
   measures: 1,
-  subdivision: sanitizeOption(subdivisionData[0]),
+  subdivisions: defaultSubdivisions,
   beats: beatCountData[3],
   usePoly: false,
-  state: getBeatState(4, 'base'),
+  state: buildDefaultBeatState(defaultSubdivisions),
   sounds: getBeatSoundState(4, [], Sound.Oscillator),
   polyBeats: beatCountData[2],
-  polySubdivision: sanitizeOption(subdivisionData[0]),
-  polyState: getBeatState(3, 'base'),
+  polySubdivisions: defaultPolySubdivisions,
+  polyState: buildDefaultBeatState(defaultPolySubdivisions),
   polySounds: getBeatSoundState(3, [], Sound.Oscillator),
   section: DefaultSection,
   name: '',

@@ -10,7 +10,7 @@ import {
 import { createPortal } from 'react-dom';
 import '../css/BPM-Grid.css';
 import { isMobileUserAgent } from '../helpers/metronome.helpers';
-import { getBeatState } from '../services/rhythm.services';
+import { buildSubdivision } from '../services/subdivision';
 import type { SubdivisionName } from '../services/subdivision/types';
 import type { BeatStore } from '../timing_engine/beatStore';
 import { Sound } from '../timing_engine/oscillator.types';
@@ -22,37 +22,48 @@ interface BPMGridProps {
   beats: number;
   beatStore: BeatStore;
   smallVersion?: boolean;
-  subdivision: number;
   totalBeats: BeatState[];
   beatCountGhost: number | null;
   beatSounds: Sound[][];
-  subdivisionNew: number[];
+  subdivisions: number[];
   handleBeatClick: (index: number) => void;
   handleSoundSelection: (sound: Sound, index: number) => void;
   handleSubdivisionUpdate: (subdivision: SubdivisionName, beat: number) => void;
+}
+
+const cleanFloat = (value: number, threshold = 1e-12): number => {
+  const rounded = Math.round(value);
+  return Math.abs(rounded - value) < threshold ? rounded : value;
+};
+
+const buildTickGrid = (subdivisions: number[]): number[] => {
+  const grid: number[] = [];
+  subdivisions.forEach((sub, beatIndex) => {
+    const ticks = Math.round(1 / sub);
+    for (let i = 0; i < ticks; i++) {
+      grid.push(cleanFloat(beatIndex + 1 + i * sub));
+    }
+  });
+  return grid;
+};
+
+// `beat` is a beat position (0, 1, 1.333, ...); downbeats are whole numbers
+function isSubdividedNote(beat: number): boolean {
+  return !Number.isInteger(beat);
 }
 
 function BPMGrid({
   beats,
   beatStore,
   smallVersion,
-  subdivision,
   handleBeatClick,
   totalBeats,
   beatCountGhost,
   beatSounds,
   handleSoundSelection,
-  subdivisionNew,
+  subdivisions,
   handleSubdivisionUpdate,
 }: BPMGridProps) {
-  function isSubdividedNote(
-    beats: number,
-    beat: number,
-    subdivision: number,
-  ): boolean {
-    return !Number.isInteger((beats / (beats / subdivision)) * beat);
-  }
-
   const PRESS_THRESHOLD = 1000;
 
   const pressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -116,14 +127,14 @@ function BPMGrid({
 
   const handleMouseDown = useCallback(
     (beat: number, event: MouseEvent<HTMLDivElement, Event>) => {
-      if (isSubdividedNote(beats, beat, subdivision)) return;
+      if (isSubdividedNote(beat)) return;
 
       if (pressTimer.current) {
         clearTimeout(pressTimer.current);
       }
 
       pressTimer.current = setTimeout(() => {
-        if (!isSubdividedNote(beats, beat, subdivision)) {
+        if (!isSubdividedNote(beat)) {
           if (!subdivisionModalRef.current) return;
           setLongPress(true);
           setMenuOpenDot(null);
@@ -150,7 +161,7 @@ function BPMGrid({
         }
       }, PRESS_THRESHOLD);
     },
-    [beats, subdivision],
+    [],
   );
 
   const handleMouseUp = useCallback(
@@ -171,7 +182,7 @@ function BPMGrid({
     const dots: JSX.Element[] = [];
     let index = 0;
     for (let i = 0; i < beats; i++) {
-      const currentSubdivision = subdivisionNew[i];
+      const currentSubdivision = subdivisions[i];
 
       const count = Math.round(1 / currentSubdivision);
       for (let j = 0; j < count; j++) {
@@ -220,28 +231,20 @@ function BPMGrid({
     cancelMenuClose,
     scheduleMenuClose,
     handleSoundSelection,
-    subdivisionNew,
+    subdivisions,
   ]);
 
   const handleSubdivisionChange = (subdivision: SubdivisionName): void => {
     handleSubdivisionUpdate(subdivision, subdivisionBeatRef.current);
   };
 
-  const cleanFloat = (value: number, threshold = 1e-12): number => {
-    const rounded = Math.round(value);
-    return Math.abs(rounded - value) < threshold ? rounded : value;
-  };
-
-  const buildTickGrid = (subdivisions: number[]): number[] => {
-    const grid: number[] = [];
-    subdivisions.forEach((sub, beatIndex) => {
-      const ticks = Math.round(1 / sub);
-      for (let i = 0; i < ticks; i++) {
-        grid.push(cleanFloat(beatIndex + 1 + i * sub));
-      }
-    });
-    return grid;
-  };
+  // preview of the pending beat count: existing beats keep their
+  // subdivision, added beats show as quarter notes
+  const ghostPositions = useMemo(() => {
+    if (!beatCountGhost) return [];
+    const ghostSubs = buildSubdivision(beatCountGhost, subdivisions);
+    return buildTickGrid(ghostSubs).map((beat) => beat - 1);
+  }, [beatCountGhost, subdivisions]);
 
   // Drives the active-beat highlight straight from the audio clock. Beat
   // ticks mutate classList instead of setting state, so they cost zero
@@ -249,7 +252,7 @@ function BPMGrid({
   // className attribute on those nodes, clearing the class we set here.
   useEffect(() => {
     const applyActiveBeat = (beat: number): void => {
-      const grid = buildTickGrid(subdivisionNew);
+      const grid = buildTickGrid(subdivisions);
 
       const nextIndex = grid.findIndex((b) => {
         return b === beat;
@@ -268,7 +271,7 @@ function BPMGrid({
     applyActiveBeat(beatStore.get());
 
     return beatStore.subscribe(applyActiveBeat);
-  }, [beatStore, totalBeats, subdivision, dots]);
+  }, [beatStore, totalBeats, subdivisions, dots]);
 
   return (
     <>
@@ -277,17 +280,17 @@ function BPMGrid({
           className={`grid-container ghost ${smallVersion ? 'small' : ''}`}
           style={
             {
-              '--beats': beatCountGhost / subdivision,
+              '--beats': beatCountGhost,
               zIndex: menuOpenDot !== null ? '6' : '5',
             } as React.CSSProperties
           }
         >
-          {getBeatState(beatCountGhost, subdivision).map((beat, i) => {
+          {ghostPositions.map((position) => {
             return (
               <div
-                className={`dot ${isSubdividedNote(beatCountGhost, i, subdivision) ? 'subdivision' : ''} ${beat === 0 ? 'off' : ''}`}
-                key={i}
-                style={{ '--i': i } as React.CSSProperties}
+                className={`dot ${isSubdividedNote(position) ? 'subdivision' : ''}`}
+                key={position}
+                style={{ '--i': position } as React.CSSProperties}
               ></div>
             );
           })}
@@ -298,7 +301,7 @@ function BPMGrid({
         className={`grid-container ${smallVersion ? 'small' : ''}`}
         style={
           {
-            '--beats': beats / subdivision,
+            '--beats': beats,
             zIndex: menuOpenDot !== null ? '6' : '5',
           } as React.CSSProperties
         }

@@ -1,4 +1,37 @@
+import { type DropdownOptions } from '../components/Dropdown';
+import { resolveSubdivisions } from '../services/subdivision';
 import { type RhythmBlock } from './BuilderContext.types';
+
+/** A block as saved in IndexedDB before the per-beat subdivision migration. */
+type LegacyRhythmBlock = Omit<RhythmBlock, 'subdivisions' | 'polySubdivisions'> &
+  Partial<Pick<RhythmBlock, 'subdivisions' | 'polySubdivisions'>> & {
+    subdivision?: DropdownOptions;
+    polySubdivision?: DropdownOptions;
+  };
+
+/**
+ * Workflows saved before the per-beat subdivision migration only carry the
+ * single `subdivision`/`polySubdivision` option. Resolve them to arrays and
+ * drop the legacy keys so they are not written back.
+ */
+export const withSubdivisions = (stored: RhythmBlock): RhythmBlock => {
+  const { subdivision, polySubdivision, ...block } =
+    stored as LegacyRhythmBlock;
+
+  return {
+    ...block,
+    subdivisions: resolveSubdivisions(
+      block.subdivisions,
+      subdivision?.value,
+      Number(block.beats.value),
+    ),
+    polySubdivisions: resolveSubdivisions(
+      block.polySubdivisions,
+      polySubdivision?.value,
+      Number(block.polyBeats.value),
+    ),
+  };
+};
 
 export const totalMeasures = (blocks: RhythmBlock[]): number => {
   return blocks

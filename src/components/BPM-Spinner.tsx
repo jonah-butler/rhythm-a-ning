@@ -4,7 +4,6 @@ import {
   useState,
   type MouseEvent,
   type PointerEvent as PE,
-  type ReactNode,
 } from 'react';
 import PowerButton from '../assets/power-button.svg?react';
 import '../css/BPM-Spinner.css';
@@ -13,8 +12,6 @@ interface BPMSpinnerProps {
   bpm: number;
   isRunning: boolean;
   usePolyrhythm: boolean;
-  subdivisionIcon: ReactNode;
-  polySubdivisionIcon: ReactNode;
   // currentBeat: number;
   updateBPM: (value: number) => void;
   togglePlayback: () => void;
@@ -26,8 +23,6 @@ function BPMSpinner({
   updateBPM,
   togglePlayback,
   usePolyrhythm,
-  subdivisionIcon,
-  polySubdivisionIcon,
 }: BPMSpinnerProps) {
   const [rotation, setRotation] = useState(0);
   const [count, setCount] = useState(bpm);
@@ -216,10 +211,10 @@ function BPMSpinner({
         }
       >
         <span className="tap-indicator">tap</span>
-        <div className="note-container">
+        {/* <div className="note-container">
           <span>{subdivisionIcon}</span>
           {usePolyrhythm && <span>{polySubdivisionIcon}</span>}
-        </div>
+        </div> */}
         <div className="display-container">
           <h4>{count}</h4>
           <h5>BPM</h5>

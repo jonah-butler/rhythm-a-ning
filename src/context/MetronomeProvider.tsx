@@ -3,10 +3,11 @@ import { useLocation } from 'react-router-dom';
 import { beatCountData } from '../data';
 import { parseMetronomeQueryParams } from '../helpers/metronome.helpers';
 import { rhythmFingerprint } from '../services/rhythm.services';
-import { getSubdivision } from '../services/subdivision';
-import { subdivisionData } from '../services/subdivision/data';
+import {
+  buildDefaultBeatState,
+  resolveSubdivisions,
+} from '../services/subdivision';
 import { Sound } from '../timing_engine/oscillator.types';
-import { Subdivisions } from '../timing_engine/types';
 import { MetronomeBuilderContext } from './MetronomeContext';
 import { type RhythmSlim } from './MetronomeContext.types';
 
@@ -17,16 +18,15 @@ function buildInitialRhythm(search: string): RhythmSlim {
     ? beatCountData[parsedDefaults.baseCount]
     : beatCountData[3];
 
-  const subdivision = parsedDefaults.baseSubdivion
-    ? subdivisionData[parsedDefaults.baseSubdivion]
-    : subdivisionData[0];
+  const subdivisions = resolveSubdivisions(
+    parsedDefaults.baseSubdivisions,
+    null,
+    parseInt(beats.value),
+  );
 
   const state = parsedDefaults.beatState
     ? parsedDefaults.beatState
-    : (new Array(
-        parseInt(beats.value) /
-          Subdivisions[subdivision.value as keyof typeof Subdivisions],
-      ).fill(1) as RhythmSlim['state']);
+    : buildDefaultBeatState(subdivisions);
 
   const sounds = parsedDefaults.beatSounds
     ? parsedDefaults.beatSounds
@@ -34,28 +34,19 @@ function buildInitialRhythm(search: string): RhythmSlim {
         Sound.Oscillator,
       ]) as RhythmSlim['sounds']);
 
-  const subdivisionNew = new Array(parseInt(beats.value)).fill(
-    getSubdivision(subdivision.value),
-  );
-
   const polyBeats = parsedDefaults.polyCount
     ? beatCountData[parsedDefaults.polyCount]
     : beatCountData[2];
 
-  const polySubdivision = parsedDefaults.polySubdivision
-    ? subdivisionData[parsedDefaults.polySubdivision]
-    : subdivisionData[0];
-
-  const polySubdivisionNew = new Array(parseInt(polyBeats.value)).fill(
-    getSubdivision(polySubdivision.value),
+  const polySubdivisions = resolveSubdivisions(
+    parsedDefaults.polySubdivisions,
+    null,
+    parseInt(polyBeats.value),
   );
 
   const polyState = parsedDefaults.polyBeatState
     ? parsedDefaults.polyBeatState
-    : (new Array(
-        parseInt(polyBeats.value) /
-          Subdivisions[polySubdivision.value as keyof typeof Subdivisions],
-      ).fill(1) as RhythmSlim['polyState']);
+    : buildDefaultBeatState(polySubdivisions);
 
   const polySounds = parsedDefaults.polyBeatSound
     ? parsedDefaults.polyBeatSound
@@ -67,20 +58,18 @@ function buildInitialRhythm(search: string): RhythmSlim {
     id: '',
     bpm: parsedDefaults.bpm ? parsedDefaults.bpm : 60,
     measures: 1,
-    subdivision,
+    subdivisions,
     beats,
     usePoly: parsedDefaults.usePoly ? parsedDefaults.usePoly : false,
     state,
     sounds,
     polyBeats,
-    polySubdivision,
+    polySubdivisions,
     polyState,
     polySounds,
     name: '',
     createdAt: null,
     updatedAt: null,
-    subNew: subdivisionNew,
-    polySubNew: polySubdivisionNew,
   };
 }
 

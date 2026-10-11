@@ -1,6 +1,6 @@
 import type { RhythmBlock } from '../context/BuilderContext.types';
 import { Emitter } from '../services/emit';
-import { getBeatSoundState, getSubdivision } from '../services/rhythm.services';
+import { getBeatSoundState } from '../services/rhythm.services';
 import type {
   CondcutorEvents,
   ConductorParams,
@@ -107,11 +107,11 @@ export class Conductor extends Emitter<CondcutorEvents> {
       });
 
       const r1 = new Rhythm({
-        subdivision: getSubdivision(block.subdivision.value),
         beats: Number(block.beats.value),
         state: block.state,
         sound: osc1,
         sounds: block.sounds,
+        subdivisions: block.subdivisions,
       });
 
       r1.on('scheduled', (beat: number) => {
@@ -155,18 +155,18 @@ export class Conductor extends Emitter<CondcutorEvents> {
 
           const r1 = this.getRhythm(0);
           r1.resetState(newWorkflow.state);
-          r1.setSubdivision(getSubdivision(newWorkflow.subdivision.value));
+          r1.setSubdivisions(newWorkflow.subdivisions);
           r1.updateSounds(newWorkflow.sounds);
           if (newWorkflow.usePoly) {
             if (this.numberOfRhythms !== 2) {
               console.log('new', newWorkflow);
               const r2 = new Rhythm({
-                subdivision: getSubdivision(newWorkflow.polySubdivision.value),
                 beats: Number(newWorkflow.beats.value),
                 state: newWorkflow.polyState,
                 sound: osc2,
                 poly: Number(newWorkflow.polyBeats.value),
                 sounds: newWorkflow.polySounds,
+                subdivisions: newWorkflow.polySubdivisions,
               });
 
               this.addRhythm(r2);
@@ -179,9 +179,7 @@ export class Conductor extends Emitter<CondcutorEvents> {
                 true,
               );
               polyRhythm.resetState(newWorkflow.polyState);
-              polyRhythm.setSubdivision(
-                getSubdivision(newWorkflow.polySubdivision.value),
-              );
+              polyRhythm.setSubdivisions(newWorkflow.polySubdivisions);
               polyRhythm.updateSounds(newWorkflow.polySounds);
             }
           } else {
@@ -196,7 +194,6 @@ export class Conductor extends Emitter<CondcutorEvents> {
 
       if (block.usePoly) {
         const r2 = new Rhythm({
-          subdivision: getSubdivision(block.polySubdivision.value),
           beats: Number(block.beats.value),
           state: block.polyState,
           sound: osc2,
@@ -206,6 +203,7 @@ export class Conductor extends Emitter<CondcutorEvents> {
             block.polySounds,
             Sound.Oscillator,
           ),
+          subdivisions: block.polySubdivisions,
         });
 
         this.addRhythm(r2);
@@ -217,9 +215,8 @@ export class Conductor extends Emitter<CondcutorEvents> {
     const beatPositionGrid: number[] = [];
     const spacing = this.cleanFloat(r1.beats / r2.poly);
 
-    // remove bang once subNew is no longer optional
-    for (let i = 0; i < r2.subNew!.length; i++) {
-      const sub = r2.subNew![i];
+    for (let i = 0; i < r2.subdivisions.length; i++) {
+      const sub = r2.subdivisions[i];
       const count = 1 / sub;
 
       for (let j = i * count; j < (1 + i) * count; j++) {
@@ -268,7 +265,7 @@ export class Conductor extends Emitter<CondcutorEvents> {
       }
 
       rhythm.step = step;
-      rhythm.beatTrack = rhythm.cleanFloat(step * rhythm.subdivision + 1);
+      rhythm.beatTrack = rhythm.getBeatAtStep(step);
 
       rhythm.killed = false;
     } else {

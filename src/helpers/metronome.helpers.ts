@@ -1,17 +1,24 @@
-import { subdivisionData } from '../data';
-import { getBeatState } from '../services/rhythm.services';
+import {
+  buildDefaultBeatState,
+  resolveSubdivisions,
+} from '../services/subdivision';
+import { subdivisionData } from '../services/subdivision/data';
+import {
+  SubdivisionKeyValue,
+  SubdivisionValueKey,
+} from '../services/subdivision/types';
 import { Sound } from '../timing_engine/oscillator.types';
 import { type BeatState } from '../timing_engine/rhythm.types';
 
 type QueryValidation = {
   bpm: number;
   baseCount: number;
-  baseSubdivion: number;
+  baseSubdivisions: number[];
   beatState: BeatState[];
   beatSounds: Sound[][];
   usePoly: boolean;
   polyCount: number;
-  polySubdivision: number;
+  polySubdivisions: number[];
   polyBeatState: BeatState[];
   polyBeatSound: Sound[][];
 };
@@ -21,6 +28,36 @@ export const isMobileUserAgent = (): boolean => {
   return /android|ipad|iphone|ipod|blackberry|webos|iemobile|mobile/i.test(
     userAgent,
   );
+};
+
+/**
+ * Per-beat subdivisions are shared as ticks per beat, e.g. `1,3,1,1`.
+ * Links made before that carry a single index into the subdivision list
+ * (`bs`/`ps`), which still resolves for every beat.
+ */
+const parseSubdivisions = (
+  params: URLSearchParams,
+  key: string,
+  legacyKey: string,
+  beats: number,
+): number[] => {
+  const ticks = params.get(key);
+  const parsed = ticks
+    ? ticks.split(',').map((tick) => {
+        const sub = 1 / +tick;
+        return Number.isInteger(+tick) && SubdivisionValueKey[sub]
+          ? sub
+          : SubdivisionKeyValue.base;
+      })
+    : null;
+
+  const legacyIndex = params.get(legacyKey);
+  const legacy =
+    legacyIndex && Number.isInteger(+legacyIndex)
+      ? subdivisionData[+legacyIndex]?.value
+      : null;
+
+  return resolveSubdivisions(parsed, legacy, beats);
 };
 
 export const parseMetronomeQueryParams = (query: string): QueryValidation => {
@@ -50,19 +87,15 @@ export const parseMetronomeQueryParams = (query: string): QueryValidation => {
       validation.baseCount = 3;
     }
 
-    const baseSubdivision = params.get('bs');
-    if (baseSubdivision && Number.isInteger(+baseSubdivision)) {
-      validation.baseSubdivion = +baseSubdivision > 8 ? 0 : +baseSubdivision;
-    } else {
-      validation.baseSubdivion = 0;
-    }
+    validation.baseSubdivisions = parseSubdivisions(
+      params,
+      'bsd',
+      'bs',
+      validation.baseCount + 1,
+    );
 
     const baseState = params.get('bst');
-    const subLabel = subdivisionData[validation.baseSubdivion];
-    const referenceState = getBeatState(
-      validation.baseCount + 1,
-      subLabel.value,
-    );
+    const referenceState = buildDefaultBeatState(validation.baseSubdivisions);
     if (baseState && Number.isInteger(+baseState)) {
       const normalizedState = baseState
         .split('')
@@ -91,18 +124,16 @@ export const parseMetronomeQueryParams = (query: string): QueryValidation => {
       validation.polyCount = 2;
     }
 
-    const polySubdivision = params.get('ps');
-    if (polySubdivision && Number.isInteger(+polySubdivision)) {
-      validation.polySubdivision = +polySubdivision > 8 ? 0 : +polySubdivision;
-    } else {
-      validation.polySubdivision = 0;
-    }
+    validation.polySubdivisions = parseSubdivisions(
+      params,
+      'psd',
+      'ps',
+      validation.polyCount + 1,
+    );
 
     const basePolyState = params.get('pbst');
-    const polySubLabel = subdivisionData[validation.polySubdivision];
-    const referencePolyState = getBeatState(
-      validation.polyCount + 1,
-      polySubLabel.value,
+    const referencePolyState = buildDefaultBeatState(
+      validation.polySubdivisions,
     );
     if (basePolyState && Number.isInteger(+basePolyState)) {
       const normalizedState = basePolyState

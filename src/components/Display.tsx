@@ -1,4 +1,3 @@
-import { type ReactNode } from 'react';
 import '../css/Display.css';
 import type { SubdivisionName } from '../services/subdivision/types';
 import { baseBeatStore, polyBeatStore } from '../timing_engine/beatStore';
@@ -14,18 +13,14 @@ interface DisplayProps {
   beats: number;
   polyrhythm: number;
   usePoly: boolean;
-  subdivision: number;
-  polySubdivision: number;
   totalBeats: BeatState[];
   totalPolyBeats: BeatState[];
-  subdivisionIcon: ReactNode;
-  polySubdivisionIcon: ReactNode;
   beatCountGhost: number | null;
   polyBeatCountGhost: number | null;
   beatSounds: Sound[][];
   polyBeatSounds: Sound[][];
-  subdivisionNew: number[];
-  polySubdivisionNew: number[];
+  subdivisions: number[];
+  polySubdivisions: number[];
   updateBPM: (value: number) => void;
   togglePlayback: () => void;
   handleBeatClick: (i: number) => void;
@@ -47,24 +42,20 @@ function Display({
   usePoly,
   togglePlayback,
   updateBPM,
-  subdivision,
-  polySubdivision,
   handleBeatClick,
   handlePolyBeatClick,
   totalBeats,
   totalPolyBeats,
-  subdivisionIcon,
-  polySubdivisionIcon,
   beatCountGhost,
   polyBeatCountGhost,
   beatSounds,
   polyBeatSounds,
   handleSoundSelection,
   handlePolySoundSelection,
-  subdivisionNew,
+  subdivisions,
   handleSubdivisionUpdate,
   handlePolySubdivisionUpdate,
-  polySubdivisionNew,
+  polySubdivisions,
 }: DisplayProps) {
   return (
     <div className="metronome">
@@ -73,8 +64,7 @@ function Display({
         <BPMGrid
           beats={beats}
           beatStore={baseBeatStore}
-          subdivisionNew={subdivisionNew}
-          subdivision={subdivision}
+          subdivisions={subdivisions}
           totalBeats={totalBeats}
           handleBeatClick={(i: number) => handleBeatClick(i)}
           beatCountGhost={beatCountGhost}
@@ -90,8 +80,6 @@ function Display({
           isRunning={isRunning}
           bpm={bpm}
           usePolyrhythm={usePoly}
-          subdivisionIcon={subdivisionIcon}
-          polySubdivisionIcon={polySubdivisionIcon}
         />
 
         {/* Small Inner BPM Grid */}
@@ -100,11 +88,10 @@ function Display({
             beats={polyrhythm}
             beatStore={polyBeatStore}
             smallVersion={true}
-            subdivision={polySubdivision}
             totalBeats={totalPolyBeats}
             beatCountGhost={polyBeatCountGhost}
             beatSounds={polyBeatSounds}
-            subdivisionNew={polySubdivisionNew}
+            subdivisions={polySubdivisions}
             handleBeatClick={(i: number) => handlePolyBeatClick(i)}
             handleSoundSelection={handlePolySoundSelection}
             handleSubdivisionUpdate={handlePolySubdivisionUpdate}

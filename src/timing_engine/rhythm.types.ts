@@ -2,12 +2,11 @@ import { type ISoundPlayer, Sound } from './oscillator.types';
 
 export type RhythmParams = {
   beats: number;
-  subdivision: number;
   sound: ISoundPlayer;
   state: BeatState[];
   poly?: number;
   sounds: Sound[][];
-  subNew?: number[];
+  subdivisions: number[];
 };
 
 export type BeatState = 0 | 1;

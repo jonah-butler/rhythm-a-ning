@@ -25,13 +25,9 @@ import {
   getSubdivision,
   getSubdivisionName,
 } from '../services/subdivision';
-import {
-  subdivisionData,
-  subdivisionDataWithEmpty,
-} from '../services/subdivision/data';
+import { subdivisionDataWithEmpty } from '../services/subdivision/data';
 import {
   SubdivisionKeyValue,
-  type SubdivisionDropdownOptionsWithEmpty,
   type SubdivisionName,
 } from '../services/subdivision/types';
 import { releaseWakeLock, requestWakeLock } from '../services/wakelock';
@@ -44,7 +40,6 @@ import {
   type BeatState,
   type BeatUpdatePayload,
 } from '../timing_engine/rhythm.types';
-import { Subdivisions } from '../timing_engine/types';
 
 export default function Metronome() {
   /**
@@ -56,17 +51,15 @@ export default function Metronome() {
   const { rhythm, loadToken, updateRhythm } = useMetronomeBuilderContext();
   const {
     bpm,
-    subdivision,
     beats: beatCount,
     state: totalBeats,
     sounds,
     usePoly: usePolyrhythm,
     polyBeats: polyBeatCount,
-    polySubdivision,
     polyState: totalPolyBeats,
     polySounds,
-    subNew,
-    polySubNew,
+    subdivisions,
+    polySubdivisions,
   } = rhythm;
 
   /**
@@ -103,7 +96,6 @@ export default function Metronome() {
   });
 
   const beatCountRef = useRef(beatCount);
-  const subdivisionRef = useRef(subdivision);
 
   //beat state
   const totalBeatsRef = useRef<BeatState[]>(totalBeats);
@@ -122,8 +114,6 @@ export default function Metronome() {
     subdividedOffset: -3,
     gain: 0.5,
   });
-  const polySubdivisionRef = useRef(polySubdivision);
-
   const totalPolyBeatsRef = useRef<BeatState[]>(totalPolyBeats);
 
   //beat sound state
@@ -170,15 +160,14 @@ export default function Metronome() {
   );
 
   const subdivisionPerBeat = useMemo(() => {
-    if (!subNew)
-      return { label: '--', value: '' } as SubdivisionDropdownOptionsWithEmpty;
-
     const beat = parseInt(selectedBeat.value);
     if (isNaN(beat)) {
-      const identicalSubs = subNew.every((sub) => sub === subNew[0]);
+      const identicalSubs = subdivisions.every(
+        (sub) => sub === subdivisions[0],
+      );
       if (identicalSubs) {
         const sub = subdivisionDataWithEmpty.filter(
-          (sub) => sub.value === getSubdivisionName(subNew[0]),
+          (sub) => sub.value === getSubdivisionName(subdivisions[0]),
         )[0];
         return sub;
       }
@@ -189,21 +178,18 @@ export default function Metronome() {
       return nullSub;
     }
 
-    const selectedSubIndex = subNew[beat - 1];
+    const selectedSubIndex = subdivisions[beat - 1];
     const sub = subdivisionDataWithEmpty.filter(
       (sub) => sub.value === getSubdivisionName(selectedSubIndex),
     )[0];
     return sub;
-  }, [selectedBeat, subNew]);
+  }, [selectedBeat, subdivisions]);
 
   const polySubdivisionPerBeat = useMemo(() => {
-    if (!polySubNew)
-      return { label: '--', value: '' } as SubdivisionDropdownOptionsWithEmpty;
-
     const beat = parseInt(polySelectedBeat.value);
-    const sub0 = polySubNew[0];
+    const sub0 = polySubdivisions[0];
     if (isNaN(beat)) {
-      const identicalSubs = polySubNew.every((sub) => sub === sub0);
+      const identicalSubs = polySubdivisions.every((sub) => sub === sub0);
       if (identicalSubs) {
         const sub = subdivisionDataWithEmpty.filter(
           (sub) => sub.value === getSubdivisionName(sub0),
@@ -217,12 +203,12 @@ export default function Metronome() {
       return nullSub;
     }
 
-    const selectedSubIndex = polySubNew[beat - 1];
+    const selectedSubIndex = polySubdivisions[beat - 1];
     const sub = subdivisionDataWithEmpty.filter(
       (sub) => sub.value === getSubdivisionName(selectedSubIndex),
     )[0];
     return sub;
-  }, [polySelectedBeat, polySubNew]);
+  }, [polySelectedBeat, polySubdivisions]);
 
   // rhythm event callbacks are bound once, read selection from refs
   const selectedBeatRef = useRef(selectedBeat);
@@ -234,7 +220,12 @@ export default function Metronome() {
     subdivisionPerBeatRef.current = subdivisionPerBeat;
     polySelectedBeatRef.current = polySelectedBeat;
     polySubdivisionPerBeatRef.current = polySubdivisionPerBeat;
-  }, [selectedBeat, subdivisionPerBeat, polySelectedBeat, polySubdivisionPerBeat]);
+  }, [
+    selectedBeat,
+    subdivisionPerBeat,
+    polySelectedBeat,
+    polySubdivisionPerBeat,
+  ]);
 
   // const polySubdivisionOptions = useMemo(() => {
   //   const options: DropdownOptions[] = [];
@@ -283,10 +274,8 @@ export default function Metronome() {
 
     // refs first -- rhythm event callbacks read these, not render values
     beatCountRef.current = rhythm.beats;
-    subdivisionRef.current = rhythm.subdivision;
     totalBeatsRef.current = rhythm.state;
     soundsRef.current = rhythm.sounds;
-    polySubdivisionRef.current = rhythm.polySubdivision;
     totalPolyBeatsRef.current = rhythm.polyState;
     polySoundsRef.current = rhythm.polySounds;
     bpmRef.current = rhythm.bpm;
@@ -394,7 +383,7 @@ export default function Metronome() {
         );
 
         conductor.current?.getRhythm(0).updateSounds(newSounds);
-        conductor.current?.getRhythm(0).setSubdivisionNew(newSubdivision);
+        conductor.current?.getRhythm(0).setSubdivisions(newSubdivision);
         soundsRef.current = newSounds;
 
         beatCountRef.current = newBeatCount;
@@ -407,13 +396,12 @@ export default function Metronome() {
           sounds: newSounds,
           beats: newBeatCount,
           state: newBeatState,
-          subNew: newSubdivision,
+          subdivisions: newSubdivision,
         });
 
         return newBeatState;
       };
 
-      const baseSubdivision = 1; // ignored in Rhythm - DELETE
       const baseBeatCount = parseInt(beatCount.value);
       const baseBeatState = totalBeatsRef.current;
 
@@ -428,15 +416,12 @@ export default function Metronome() {
         sound: Sound.Kick,
       });
 
-      const subdivisionNew = subNew;
-
       const baseRhythm = new Rhythm({
-        subdivision: baseSubdivision, // just satisfying the linter
         beats: baseBeatCount,
         state: baseBeatState,
         sound: baseSound,
         sounds,
-        subNew: subdivisionNew,
+        subdivisions,
       });
 
       conductor.current.addRhythm(baseRhythm);
@@ -491,7 +476,7 @@ export default function Metronome() {
         );
 
         conductor.current?.getRhythm(1).updateSounds(newSounds);
-        conductor.current?.getRhythm(1).setSubdivisionNew(newSubdivision);
+        conductor.current?.getRhythm(1).setSubdivisions(newSubdivision);
 
         polySoundsRef.current = newSounds;
         totalPolyBeatsRef.current = newBeatState;
@@ -501,7 +486,7 @@ export default function Metronome() {
           polySounds: newSounds,
           polyBeats: newBeatCount,
           polyState: newBeatState,
-          polySubNew: newSubdivision,
+          polySubdivisions: newSubdivision,
         });
 
         return newBeatState;
@@ -518,24 +503,20 @@ export default function Metronome() {
         sound: null,
       });
 
-      const polySub = 1; // ignored in Rhythm - DELETE
-      const polyState = new Array(calculateTotalBeats(polySubNew ?? [])).fill(
+      const polyState = new Array(calculateTotalBeats(polySubdivisions)).fill(
         1,
       ) as BeatState[];
 
       const polyBeat = parseInt(beatCount.value);
       const polyTotalBeats = parseInt(polyBeatCount.value);
 
-      const polySubdivisionNew = polySubNew;
-
       const polyRhythm = new Rhythm({
-        subdivision: polySub, // just satisfying the linter
         sound: polySound,
         beats: polyBeat,
         poly: polyTotalBeats,
         state: polyState,
         sounds: polySounds,
-        subNew: polySubdivisionNew,
+        subdivisions: polySubdivisions,
       });
 
       // handle new rhythms when base rhythm
@@ -564,18 +545,16 @@ export default function Metronome() {
       });
     }
   }, [
-    subdivision,
     beatCount,
     frequencyData,
     usePolyrhythm,
     polyBeatCount,
     polyFrequencyData,
-    polySubdivision,
     sounds,
     polySounds,
     updateRhythm,
     loadToken,
-    subNew,
+    subdivisions,
   ]);
 
   // cleanup only
@@ -611,10 +590,10 @@ export default function Metronome() {
   }
 
   function updateSubdivision(sub: SubdivisionName | ''): void {
-    if (!subNew || sub === '') return;
+    if (sub === '') return;
 
     const newSubdivision = getSubdivision(sub);
-    let updatedSubdivisions = [...subNew];
+    let updatedSubdivisions = [...subdivisions];
     if (selectedBeat.value === 'all') {
       updatedSubdivisions = updatedSubdivisions.map(() => newSubdivision);
     } else {
@@ -655,7 +634,7 @@ export default function Metronome() {
       state: newBeatState,
       // subdivision: newSubdivision,
       sounds: newSounds,
-      subNew: updatedSubdivisions,
+      subdivisions: updatedSubdivisions,
     });
 
     soundsRef.current = newSounds;
@@ -663,10 +642,10 @@ export default function Metronome() {
   }
 
   function updatePolySubdivision(sub: SubdivisionName | ''): void {
-    if (!polySubNew || sub === '') return;
+    if (sub === '') return;
 
     const newSubdivision = getSubdivision(sub);
-    let updatedSubdivisions = [...polySubNew];
+    let updatedSubdivisions = [...polySubdivisions];
 
     if (polySelectedBeat.value === 'all') {
       updatedSubdivisions = updatedSubdivisions.map(() => newSubdivision);
@@ -706,7 +685,7 @@ export default function Metronome() {
     updateRhythm({
       polyState: newBeatState,
       // polySubdivision: newSubdivision,
-      polySubNew: updatedSubdivisions,
+      polySubdivisions: updatedSubdivisions,
       polySounds: newSounds,
     });
 
@@ -803,7 +782,7 @@ export default function Metronome() {
 
     const newSubdivision = buildSubdivision(
       updatedBeatCount,
-      subNew,
+      subdivisions,
       defaultSub,
     );
 
@@ -825,7 +804,7 @@ export default function Metronome() {
         // update beat sounds state
         const newSounds = getBeatSoundState(newBeatState.length, sounds);
         rhythm.updateSounds(newSounds);
-        rhythm.setSubdivisionNew(newSubdivision);
+        rhythm.setSubdivisions(newSubdivision);
         soundsRef.current = newSounds;
 
         beatCountRef.current = newBeatCount;
@@ -834,7 +813,7 @@ export default function Metronome() {
           sounds: newSounds,
           state: newBeatState,
           beats: newBeatCount,
-          subNew: newSubdivision,
+          subdivisions: newSubdivision,
         });
       } else {
         if (value !== beatCount.value) {
@@ -864,7 +843,7 @@ export default function Metronome() {
 
     const newSubdivision = buildSubdivision(
       updatedBeatCount,
-      polySubNew,
+      polySubdivisions,
       defaultSub,
     );
 
@@ -887,14 +866,14 @@ export default function Metronome() {
         // update poly beat sounds state
         const newSounds = getBeatSoundState(newBeatState.length, polySounds);
         rhythm.updateSounds(newSounds);
-        rhythm.setSubdivisionNew(newSubdivision);
+        rhythm.setSubdivisions(newSubdivision);
         polySoundsRef.current = newSounds;
 
         updateRhythm({
           polySounds: newSounds,
           polyState: newBeatState,
           polyBeats: newBeatCount,
-          polySubNew: newSubdivision,
+          polySubdivisions: newSubdivision,
         });
       } else {
         setPolyBeatCountGhost(newBeatCount);
@@ -1000,10 +979,8 @@ export default function Metronome() {
    * ++++++++++++++++++++++++++
    */
   const updateSubdivisionNew = (sub: SubdivisionName, beat: number): void => {
-    if (!subNew) return;
-
     // get new subdivision floating point value
-    const updatedSubdivisions = [...subNew];
+    const updatedSubdivisions = [...subdivisions];
     updatedSubdivisions[beat] = getSubdivision(sub);
 
     // remap BeatState
@@ -1020,7 +997,7 @@ export default function Metronome() {
 
     // update UI state
     updateRhythm({
-      subNew: updatedSubdivisions,
+      subdivisions: updatedSubdivisions,
       state: updatedState,
       sounds: updatedSounds,
     });
@@ -1042,10 +1019,8 @@ export default function Metronome() {
     sub: SubdivisionName,
     beat: number,
   ): void => {
-    if (!polySubNew) return;
-
     // get new subdivision floating point value
-    const updatedSubdivisions = [...polySubNew];
+    const updatedSubdivisions = [...polySubdivisions];
     updatedSubdivisions[beat] = getSubdivision(sub);
 
     // update BeatState
@@ -1062,7 +1037,7 @@ export default function Metronome() {
 
     // update UI state
     updateRhythm({
-      polySubNew: updatedSubdivisions,
+      polySubdivisions: updatedSubdivisions,
       polyState: updatedState,
       polySounds: updatedSounds,
     });
@@ -1127,10 +1102,8 @@ export default function Metronome() {
     );
     query += `&bc=${beats}`;
 
-    const sub = subdivisionData.findIndex(
-      (data) => data.value === subdivision.value,
-    );
-    query += `&bs=${sub}`;
+    // ticks per beat, e.g. [1, 1/3] -> '1,3'
+    query += `&bsd=${subdivisions.map((sub) => Math.round(1 / sub)).join(',')}`;
 
     query += `&bst=${totalBeats.join('')}`;
 
@@ -1148,10 +1121,7 @@ export default function Metronome() {
       );
       query += `&pc=${beats}`;
 
-      const sub = subdivisionData.findIndex(
-        (data) => data.value === polySubdivision.value,
-      );
-      query += `&ps=${sub}`;
+      query += `&psd=${polySubdivisions.map((sub) => Math.round(1 / sub)).join(',')}`;
 
       query += `&pbst=${totalPolyBeats.join('')}`;
 
@@ -1178,16 +1148,8 @@ export default function Metronome() {
           usePoly={usePolyrhythm}
           togglePlayback={toggleMetronome}
           updateBPM={updateBPM}
-          subdivision={
-            Subdivisions[subdivision.value as keyof typeof Subdivisions]
-          }
-          subdivisionNew={subNew ?? []}
-          polySubdivisionNew={polySubNew ?? []}
-          subdivisionIcon={subdivision.icon}
-          polySubdivision={
-            Subdivisions[polySubdivision.value as keyof typeof Subdivisions]
-          }
-          polySubdivisionIcon={polySubdivision.icon}
+          subdivisions={subdivisions}
+          polySubdivisions={polySubdivisions}
           handleBeatClick={handleBeatClick}
           handlePolyBeatClick={handlePolyBeatClick}
           totalBeats={totalBeats}
@@ -1304,7 +1266,7 @@ export default function Metronome() {
                 <RhythmState
                   onUpdate={(state) => updateBeatState(state)}
                   disabled={false}
-                  subdivisions={subNew!}
+                  subdivisions={subdivisions}
                   size="sm"
                   state={totalBeats}
                   sounds={sounds}
@@ -1391,7 +1353,7 @@ export default function Metronome() {
                 <div className="flex flex-1">
                   <Dropdown
                     variant="full"
-                    data={subdivisionData}
+                    data={subdivisionDataWithEmpty}
                     currentValue={polySubdivisionPerBeat}
                     onChange={updatePolySubdivision}
                   />
@@ -1420,7 +1382,7 @@ export default function Metronome() {
               <section className="flex flex-wrap justify-center width-100 align-center mb-2 f-gap4">
                 <RhythmState
                   onUpdate={(state) => updatePolyBeatState(state)}
-                  subdivisions={polySubNew!}
+                  subdivisions={polySubdivisions}
                   disabled={false}
                   size="sm"
                   sounds={polySounds}

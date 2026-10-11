@@ -4,8 +4,22 @@ import PlayIcon from '../../assets/icons/play.svg?react';
 import TrashIcon from '../../assets/icons/trash.svg?react';
 import '../../css/RhythmCardHorizontal.css';
 import { type RhythmResponse } from '../../services/api/types/rhythm.types';
-import { getSubdivisionData } from '../../services/rhythm.services';
+import {
+  getSubdivisionPerBeat,
+  resolveSubdivisions,
+} from '../../services/subdivision';
+import { type SubdivisionName } from '../../services/subdivision/types';
 import { Popover } from '../Popover';
+
+const getSubdivisionLabel = (
+  subdivisions: SubdivisionName[] | null | undefined,
+  legacySubdivision: string | null,
+  beats: number,
+): string => {
+  const subs = resolveSubdivisions(subdivisions, legacySubdivision, beats);
+  const option = getSubdivisionPerBeat({ label: 'all', value: 'all' }, subs);
+  return option.value ? option.label : 'mixed';
+};
 
 type RhythmCardHorizontalProps = {
   rhythm: RhythmResponse;
@@ -55,7 +69,11 @@ export default function RhythmCardHorizontal({
             <span>
               {rhythm.beats} x{' '}
               <span className="note">
-                {getSubdivisionData(rhythm.subdivision).label}
+                {getSubdivisionLabel(
+                  rhythm.subdivisions,
+                  rhythm.subdivision,
+                  rhythm.beats,
+                )}
               </span>
             </span>
             {rhythm.isPoly ? (
@@ -64,7 +82,11 @@ export default function RhythmCardHorizontal({
                 <span>
                   {rhythm.polyBeats} x{' '}
                   <span className="note">
-                    {getSubdivisionData(rhythm.polySubdivision).label}
+                    {getSubdivisionLabel(
+                      rhythm.polySubdivisions,
+                      rhythm.polySubdivision,
+                      rhythm.polyBeats ?? 0,
+                    )}
                   </span>
                 </span>
               </span>

@@ -1,4 +1,5 @@
 import type { Sound } from '../../../timing_engine/oscillator.types';
+import type { SubdivisionName } from '../../subdivision/types';
 import type { BeatState } from '../../../timing_engine/rhythm.types';
 
 export enum Subdivision {
@@ -29,6 +30,9 @@ export type CreateRhythmBody = {
   bpm: number;
   beats: number;
   measures: number;
+  /** One subdivision name per beat. */
+  subdivisions: SubdivisionName[];
+  // legacy: drop once the API reads `subdivisions`
   subdivision: Subdivision;
   state: BeatState[];
   name: string;
@@ -46,6 +50,8 @@ export type CreatePolyRhythmBody = {
   polyBeats: number;
   polyState: BeatState[];
   polySounds: Sound[][];
+  polySubdivisions: SubdivisionName[];
+  // legacy: drop once the API reads `polySubdivisions`
   polySubdivision: Subdivision;
 };
 
@@ -55,7 +61,9 @@ export type RhythmResponse = {
   beats: number;
   measures: number;
   sounds: Sound[][];
-  subdivision: Subdivision;
+  subdivisions?: SubdivisionName[] | null;
+  // legacy: rhythms saved before per-beat subdivisions
+  subdivision: Subdivision | null;
   state: BeatState[];
   name: string;
   level: null;
@@ -63,6 +71,8 @@ export type RhythmResponse = {
   polyBeats: number | null;
   polyState: BeatState[] | null;
   polySounds: Sound[][] | null;
+  polySubdivisions?: SubdivisionName[] | null;
+  // legacy: rhythms saved before per-beat subdivisions
   polySubdivision: Subdivision | null;
   id: string;
   isPoly: boolean;

@@ -10,7 +10,12 @@ import {
   type Section,
 } from './BuilderContext.types';
 import { type RhythmBlockStore } from './IndexedDB.types';
-import { averageTempo, totalMeasures, totalTime } from './builder.helpers';
+import {
+  averageTempo,
+  totalMeasures,
+  totalTime,
+  withSubdivisions,
+} from './builder.helpers';
 
 export function RhythmBuilderProvider({ children }: { children: ReactNode }) {
   const [rhythmWorkflow, setRhythmWorkflow] = useState<RhythmBlockStore>({
@@ -18,7 +23,10 @@ export function RhythmBuilderProvider({ children }: { children: ReactNode }) {
   });
 
   const setActiveBlocks = (workflow: RhythmBlockStore): void => {
-    setRhythmWorkflow(workflow);
+    setRhythmWorkflow({
+      ...workflow,
+      blocks: workflow.blocks.map(withSubdivisions),
+    });
   };
 
   const updateBlock = (id: string, patch: Partial<RhythmBlock | PolyState>) => {
