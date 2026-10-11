@@ -1,15 +1,17 @@
 import {
-  type MouseEvent,
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
+  type JSX,
+  type MouseEvent,
 } from 'react';
 import { createPortal } from 'react-dom';
 import '../css/BPM-Grid.css';
 import { isMobileUserAgent } from '../helpers/metronome.helpers';
 import { getBeatState } from '../services/rhythm.services';
+import type { SubdivisionName } from '../services/subdivision/types';
 import type { BeatStore } from '../timing_engine/beatStore';
 import { Sound } from '../timing_engine/oscillator.types';
 import type { BeatState } from '../timing_engine/rhythm.types';
@@ -24,8 +26,10 @@ interface BPMGridProps {
   totalBeats: BeatState[];
   beatCountGhost: number | null;
   beatSounds: Sound[][];
+  subdivisionNew: number[];
   handleBeatClick: (index: number) => void;
   handleSoundSelection: (sound: Sound, index: number) => void;
+  handleSubdivisionUpdate: (subdivision: SubdivisionName, beat: number) => void;
 }
 
 function BPMGrid({
@@ -38,6 +42,8 @@ function BPMGrid({
   beatCountGhost,
   beatSounds,
   handleSoundSelection,
+  subdivisionNew,
+  handleSubdivisionUpdate,
 }: BPMGridProps) {
   function isSubdividedNote(
     beats: number,
@@ -50,9 +56,9 @@ function BPMGrid({
   const PRESS_THRESHOLD = 1000;
 
   const pressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const subdivisionBeatRef = useRef(0);
   const [longPress, setLongPress] = useState(false);
-  // kept in sync below so the mouseup handler can stay referentially
-  // stable (doesn't need `longPress` in its dep array)
   const longPressRef = useRef(longPress);
   longPressRef.current = longPress;
 
@@ -72,6 +78,8 @@ function BPMGrid({
   const cancelMenuOpen = useCallback(() => {
     if (menuOpenTimer.current) clearTimeout(menuOpenTimer.current);
   }, []);
+
+  const subdivisionModalRef = useRef<HTMLDivElement | null>(null);
 
   const scheduleMenuClose = useCallback(() => {
     cancelMenuClose();
@@ -108,10 +116,7 @@ function BPMGrid({
 
   const handleMouseDown = useCallback(
     (beat: number, event: MouseEvent<HTMLDivElement, Event>) => {
-      setCoordinates({
-        x: event.clientX,
-        y: event.clientY,
-      });
+      if (isSubdividedNote(beats, beat, subdivision)) return;
 
       if (pressTimer.current) {
         clearTimeout(pressTimer.current);
@@ -119,7 +124,29 @@ function BPMGrid({
 
       pressTimer.current = setTimeout(() => {
         if (!isSubdividedNote(beats, beat, subdivision)) {
+          if (!subdivisionModalRef.current) return;
           setLongPress(true);
+          setMenuOpenDot(null);
+
+          subdivisionBeatRef.current = beat;
+
+          let offset = 0;
+          const dot = event.target as HTMLDivElement;
+          const dotCoordinates = dot.getBoundingClientRect();
+          const { bottom, left } = dotCoordinates;
+          const distanceFromRightEdge = window.innerWidth - left;
+          const { clientWidth: modalWidth } = subdivisionModalRef.current;
+
+          if (distanceFromRightEdge < modalWidth) {
+            offset =
+              subdivisionModalRef.current!.clientWidth -
+              (window.innerWidth - left);
+          }
+
+          setCoordinates({
+            x: left - offset,
+            y: bottom + window.scrollY,
+          });
         }
       }, PRESS_THRESHOLD);
     },
@@ -140,52 +167,81 @@ function BPMGrid({
     [handleBeatClick],
   );
 
-  // Deliberately excludes `currentBeat`: when only the beat ticks, the
-  // active-dot effect above handles the visual update via classList, and
-  // React reuses this exact element array (bailing out of reconciling
-  // every dot) instead of remapping ~N divs on every tick.
-  const dots = useMemo(
-    () =>
-      totalBeats.map((beat, i) => (
-        <div
-          className={`dot ${isSubdividedNote(beats, i, subdivision) ? 'subdivision' : ''} ${beat === 0 ? 'off' : ''} ${menuOpenDot === i ? 'menu-open' : ''}`}
-          key={i}
-          ref={(el) => {
-            dotRefs.current[i] = el;
-          }}
-          style={{ '--i': i } as React.CSSProperties}
-          onMouseDown={(event) => handleMouseDown(i, event)}
-          onMouseUp={() => handleMouseUp(i)}
-          onMouseEnter={() => handleDotMouseEnter(i)}
-          onMouseLeave={handleDotMouseLeave}
-        >
-          {!isMobileUserAgent() ? (
-            <SoundMenu
-              isOpen={menuOpenDot === i}
-              onKeepOpen={cancelMenuClose}
-              onRequestClose={scheduleMenuClose}
-              activeSounds={beatSounds[i]}
-              rotateMenu={true}
-              onClick={(sound) => handleSoundSelection(sound, i)}
-            />
-          ) : null}
-        </div>
-      )),
-    [
-      totalBeats,
-      beats,
-      subdivision,
-      menuOpenDot,
-      beatSounds,
-      handleMouseDown,
-      handleMouseUp,
-      handleDotMouseEnter,
-      handleDotMouseLeave,
-      cancelMenuClose,
-      scheduleMenuClose,
-      handleSoundSelection,
-    ],
-  );
+  const dots = useMemo(() => {
+    const dots: JSX.Element[] = [];
+    let index = 0;
+    for (let i = 0; i < beats; i++) {
+      const currentSubdivision = subdivisionNew[i];
+
+      const count = Math.round(1 / currentSubdivision);
+      for (let j = 0; j < count; j++) {
+        const accumulator = j * currentSubdivision;
+        const dotIndex = index++;
+        const isSubdivided = j !== 0;
+        const key = i + accumulator;
+
+        dots.push(
+          <div
+            className={`dot ${isSubdivided ? 'subdivision' : ''} ${totalBeats[dotIndex] === 0 ? 'off' : ''} ${menuOpenDot === key ? 'menu-open' : ''}`}
+            key={key}
+            ref={(el) => {
+              dotRefs.current[dotIndex] = el;
+            }}
+            style={{ '--i': i + accumulator } as React.CSSProperties}
+            onMouseDown={(event) => handleMouseDown(key, event)}
+            onMouseUp={() => handleMouseUp(dotIndex)}
+            onMouseEnter={() => handleDotMouseEnter(key)}
+            onMouseLeave={handleDotMouseLeave}
+          >
+            {!isMobileUserAgent() ? (
+              <SoundMenu
+                isOpen={menuOpenDot === key}
+                onKeepOpen={cancelMenuClose}
+                onRequestClose={scheduleMenuClose}
+                activeSounds={beatSounds[dotIndex]}
+                rotateMenu={true}
+                onClick={(sound) => handleSoundSelection(sound, dotIndex)}
+              />
+            ) : null}
+          </div>,
+        );
+      }
+    }
+
+    return dots;
+  }, [
+    beats,
+    menuOpenDot,
+    beatSounds,
+    handleMouseDown,
+    handleMouseUp,
+    handleDotMouseEnter,
+    handleDotMouseLeave,
+    cancelMenuClose,
+    scheduleMenuClose,
+    handleSoundSelection,
+    subdivisionNew,
+  ]);
+
+  const handleSubdivisionChange = (subdivision: SubdivisionName): void => {
+    handleSubdivisionUpdate(subdivision, subdivisionBeatRef.current);
+  };
+
+  const cleanFloat = (value: number, threshold = 1e-12): number => {
+    const rounded = Math.round(value);
+    return Math.abs(rounded - value) < threshold ? rounded : value;
+  };
+
+  const buildTickGrid = (subdivisions: number[]): number[] => {
+    const grid: number[] = [];
+    subdivisions.forEach((sub, beatIndex) => {
+      const ticks = Math.round(1 / sub);
+      for (let i = 0; i < ticks; i++) {
+        grid.push(cleanFloat(beatIndex + 1 + i * sub));
+      }
+    });
+    return grid;
+  };
 
   // Drives the active-beat highlight straight from the audio clock. Beat
   // ticks mutate classList instead of setting state, so they cost zero
@@ -193,9 +249,11 @@ function BPMGrid({
   // className attribute on those nodes, clearing the class we set here.
   useEffect(() => {
     const applyActiveBeat = (beat: number): void => {
-      const nextIndex = totalBeats.findIndex(
-        (_, i) => 1 + i * subdivision === beat,
-      );
+      const grid = buildTickGrid(subdivisionNew);
+
+      const nextIndex = grid.findIndex((b) => {
+        return b === beat;
+      });
       const prevIndex = activeIndexRef.current;
 
       if (prevIndex !== -1 && prevIndex !== nextIndex) {
@@ -251,6 +309,8 @@ function BPMGrid({
             isVisible={longPress}
             handleBlur={() => setLongPress(false)}
             coordinates={coordinates}
+            onChange={(subdivision) => handleSubdivisionChange(subdivision)}
+            ref={subdivisionModalRef}
           />,
           document.body,
         )}

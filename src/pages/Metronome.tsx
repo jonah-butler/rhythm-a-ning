@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import '../App.css';
 import GridIcon from '../assets/icons/grid.svg?react';
@@ -11,22 +11,39 @@ import Slider from '../components/Slider';
 import { Tabs } from '../components/Tabs/Tabs';
 import Toggle from '../components/Toggle';
 import { useMetronomeBuilderContext } from '../context/useMetronomeContext';
-import { beatCountData, subdivisionData } from '../data';
+import { beatCountData } from '../data';
 import { isMobileUserAgent } from '../helpers/metronome.helpers';
 import {
+  buildBeatState,
   getBeatCount,
   getBeatSoundState,
-  getBeatState,
-  getSubdivision,
 } from '../services/rhythm.services';
 import { loadSounds } from '../services/sound.services';
+import {
+  buildSubdivision,
+  calculateTotalBeats,
+  getSubdivision,
+  getSubdivisionName,
+} from '../services/subdivision';
+import {
+  subdivisionData,
+  subdivisionDataWithEmpty,
+} from '../services/subdivision/data';
+import {
+  SubdivisionKeyValue,
+  type SubdivisionDropdownOptionsWithEmpty,
+  type SubdivisionName,
+} from '../services/subdivision/types';
 import { releaseWakeLock, requestWakeLock } from '../services/wakelock';
 import { baseBeatStore, polyBeatStore } from '../timing_engine/beatStore';
 import { Conductor } from '../timing_engine/conductor';
 import { SoundPlayer } from '../timing_engine/oscillator';
 import { PlayerType, Sound } from '../timing_engine/oscillator.types';
 import { Rhythm } from '../timing_engine/rhythm';
-import { type BeatState } from '../timing_engine/rhythm.types';
+import {
+  type BeatState,
+  type BeatUpdatePayload,
+} from '../timing_engine/rhythm.types';
 import { Subdivisions } from '../timing_engine/types';
 
 export default function Metronome() {
@@ -48,6 +65,8 @@ export default function Metronome() {
     polySubdivision,
     polyState: totalPolyBeats,
     polySounds,
+    subNew,
+    polySubNew,
   } = rhythm;
 
   /**
@@ -118,6 +137,116 @@ export default function Metronome() {
   const [tab, setTab] = useState(0);
   const [primaryBeatState, setPrimaryBeatState] = useState(false);
   const [polyBeatState, setPolyBeatState] = useState(false);
+
+  const subdivisionOptions = useMemo(() => {
+    const options: DropdownOptions[] = [];
+    options.push({ label: 'all', value: 'all' });
+    for (let i = 1; i <= parseInt(beatCount.value); i++) {
+      options.push({
+        label: `${i}`,
+        value: `${i}`,
+      });
+    }
+
+    return options;
+  }, [beatCount]);
+
+  const polySubdivisionOptions = useMemo(() => {
+    const options: DropdownOptions[] = [];
+    options.push({ label: 'all', value: 'all' });
+    for (let i = 1; i <= parseInt(polyBeatCount.value); i++) {
+      options.push({
+        label: `${i}`,
+        value: `${i}`,
+      });
+    }
+
+    return options;
+  }, [polyBeatCount]);
+
+  const [selectedBeat, setSelectedBeat] = useState(subdivisionOptions[1]);
+  const [polySelectedBeat, setPolySelectedBeat] = useState(
+    subdivisionOptions[1],
+  );
+
+  const subdivisionPerBeat = useMemo(() => {
+    if (!subNew)
+      return { label: '--', value: '' } as SubdivisionDropdownOptionsWithEmpty;
+
+    const beat = parseInt(selectedBeat.value);
+    if (isNaN(beat)) {
+      const identicalSubs = subNew.every((sub) => sub === subNew[0]);
+      if (identicalSubs) {
+        const sub = subdivisionDataWithEmpty.filter(
+          (sub) => sub.value === getSubdivisionName(subNew[0]),
+        )[0];
+        return sub;
+      }
+
+      const nullSub = subdivisionDataWithEmpty.filter(
+        (sub) => sub.value === '',
+      )[0];
+      return nullSub;
+    }
+
+    const selectedSubIndex = subNew[beat - 1];
+    const sub = subdivisionDataWithEmpty.filter(
+      (sub) => sub.value === getSubdivisionName(selectedSubIndex),
+    )[0];
+    return sub;
+  }, [selectedBeat, subNew]);
+
+  const polySubdivisionPerBeat = useMemo(() => {
+    if (!polySubNew)
+      return { label: '--', value: '' } as SubdivisionDropdownOptionsWithEmpty;
+
+    const beat = parseInt(polySelectedBeat.value);
+    const sub0 = polySubNew[0];
+    if (isNaN(beat)) {
+      const identicalSubs = polySubNew.every((sub) => sub === sub0);
+      if (identicalSubs) {
+        const sub = subdivisionDataWithEmpty.filter(
+          (sub) => sub.value === getSubdivisionName(sub0),
+        )[0];
+        return sub;
+      }
+
+      const nullSub = subdivisionDataWithEmpty.filter(
+        (sub) => sub.value === '',
+      )[0];
+      return nullSub;
+    }
+
+    const selectedSubIndex = polySubNew[beat - 1];
+    const sub = subdivisionDataWithEmpty.filter(
+      (sub) => sub.value === getSubdivisionName(selectedSubIndex),
+    )[0];
+    return sub;
+  }, [polySelectedBeat, polySubNew]);
+
+  // rhythm event callbacks are bound once, read selection from refs
+  const selectedBeatRef = useRef(selectedBeat);
+  const subdivisionPerBeatRef = useRef(subdivisionPerBeat);
+  const polySelectedBeatRef = useRef(polySelectedBeat);
+  const polySubdivisionPerBeatRef = useRef(polySubdivisionPerBeat);
+  useEffect(() => {
+    selectedBeatRef.current = selectedBeat;
+    subdivisionPerBeatRef.current = subdivisionPerBeat;
+    polySelectedBeatRef.current = polySelectedBeat;
+    polySubdivisionPerBeatRef.current = polySubdivisionPerBeat;
+  }, [selectedBeat, subdivisionPerBeat, polySelectedBeat, polySubdivisionPerBeat]);
+
+  // const polySubdivisionOptions = useMemo(() => {
+  //   const options: DropdownOptions[] = [];
+  //   for (let i = 1; i <= parseInt(beatCount.value); i++) {
+  //     options.push({
+  //       label: `${i}`,
+  //       value: `${i}`,
+  //     });
+  //   }
+
+  //   return options;
+  // }, [beatCount]);
 
   // const [polyTab, setPolyTab] = useState(0);
   // const [usePolyrhythmTrainer, setUsePolyrhythmTrainer] = useState(false);
@@ -225,26 +354,52 @@ export default function Metronome() {
       const updateBeatChange = (beat: number) => {
         baseBeatStore.set(beat);
       };
+
       const updateTotalBeatChange = (
-        totalBeats: number,
+        update: BeatUpdatePayload,
       ): BeatState[] | null => {
+        const { beats: totalBeats, sub } = update;
         if (totalBeats === parseInt(beatCountRef.current.value)) return null;
 
         const newBeatCount = getBeatCount(totalBeats);
-        const newBeatState = getBeatState(
-          totalBeats,
-          subdivisionRef.current.value,
+        // const newBeatState = getBeatState(
+        //   totalBeats,
+        //   subdivisionRef.current.value,
+        // );
+
+        const currentSelectedBeat = selectedBeatRef.current;
+        const currentSubPerBeat = subdivisionPerBeatRef.current;
+        let defaultSub = SubdivisionKeyValue.base;
+        if (currentSelectedBeat.value === 'all' && currentSubPerBeat.value) {
+          defaultSub = getSubdivision(currentSubPerBeat.value);
+        }
+
+        // fix, move to helper, no !
+        const newSubdivision = buildSubdivision(totalBeats, sub, defaultSub);
+        console.log(newSubdivision);
+        // const newBeatState = new Array(
+        //   calculateTotalBeats(newSubdivision!),
+        // ).fill(1) as BeatState[];
+
+        const newBeatState = buildBeatState(
+          calculateTotalBeats(newSubdivision),
+          totalBeatsRef.current,
         );
 
         // update beat sounds state
         const newSounds = getBeatSoundState(
           newBeatState.length,
           soundsRef.current,
+          Sound.Oscillator,
         );
+
         conductor.current?.getRhythm(0).updateSounds(newSounds);
+        conductor.current?.getRhythm(0).setSubdivisionNew(newSubdivision);
         soundsRef.current = newSounds;
 
         beatCountRef.current = newBeatCount;
+        totalBeatsRef.current = newBeatState;
+
         setBeatCountGhost(null);
 
         totalBeatsRef.current = newBeatState;
@@ -252,14 +407,16 @@ export default function Metronome() {
           sounds: newSounds,
           beats: newBeatCount,
           state: newBeatState,
+          subNew: newSubdivision,
         });
 
         return newBeatState;
       };
 
-      const baseSubdivision = getSubdivision(subdivision.value);
+      const baseSubdivision = 1; // ignored in Rhythm - DELETE
       const baseBeatCount = parseInt(beatCount.value);
       const baseBeatState = totalBeatsRef.current;
+
       const baseSound = new SoundPlayer({
         audioCtx: conductor.current.audioCtx,
         outputNode: conductor.current.masterGain,
@@ -271,29 +428,22 @@ export default function Metronome() {
         sound: Sound.Kick,
       });
 
+      const subdivisionNew = subNew;
+
       const baseRhythm = new Rhythm({
-        subdivision: baseSubdivision,
+        subdivision: baseSubdivision, // just satisfying the linter
         beats: baseBeatCount,
         state: baseBeatState,
         sound: baseSound,
         sounds,
+        subNew: subdivisionNew,
       });
-
-      // // handle new rhythms when poly rhythm
-      // // has a pending beat change so rhythms
-      // // are synced on beat 1
-      // const pendingBeatChange =
-      //   conductor.current.getRhythm(1)?.pendingBeatChange;
 
       conductor.current.addRhythm(baseRhythm);
 
-      // if (pendingBeatChange) {
-      //   baseRhythm.updateBeats(pendingBeatChange, isRunningRef.current, 'base');
-      // }
-
       baseRhythm.on('beatChange', updateBeatChange);
-      baseRhythm.on('updatedBeats', (updatedBeats: number) => {
-        const state = updateTotalBeatChange(updatedBeats);
+      baseRhythm.on('updatedBeats', (update: BeatUpdatePayload) => {
+        const state = updateTotalBeatChange(update);
         if (state) {
           baseRhythm.resetState(state);
         }
@@ -305,13 +455,32 @@ export default function Metronome() {
       const updateBeatChange = (beat: number) => {
         polyBeatStore.set(beat);
       };
+
       const updateTotalBeatChange = (
-        totalBeats: number,
+        update: BeatUpdatePayload,
       ): BeatState[] | null => {
+        const { beats: totalBeats, sub } = update;
+
         const newBeatCount = getBeatCount(totalBeats);
-        const newBeatState = getBeatState(
-          totalBeats,
-          polySubdivisionRef.current.value,
+
+        let defaultSub = SubdivisionKeyValue.base;
+        const currentPolySelectedBeat = polySelectedBeatRef.current;
+        const currentPolySubPerBeat = polySubdivisionPerBeatRef.current;
+        if (
+          currentPolySelectedBeat.value === 'all' &&
+          currentPolySubPerBeat.value
+        ) {
+          defaultSub = getSubdivision(currentPolySubPerBeat.value);
+        }
+
+        const newSubdivision = buildSubdivision(totalBeats, sub, defaultSub);
+        // const newBeatState = new Array(
+        //   calculateTotalBeats(newSubdivision!),
+        // ).fill(1) as BeatState[];
+
+        const newBeatState = buildBeatState(
+          calculateTotalBeats(newSubdivision),
+          totalPolyBeatsRef.current,
         );
 
         // update beat sounds state
@@ -320,14 +489,19 @@ export default function Metronome() {
           polySoundsRef.current,
           Sound.HiHat,
         );
+
         conductor.current?.getRhythm(1).updateSounds(newSounds);
+        conductor.current?.getRhythm(1).setSubdivisionNew(newSubdivision);
+
         polySoundsRef.current = newSounds;
+        totalPolyBeatsRef.current = newBeatState;
 
         setPolyBeatCountGhost(null);
         updateRhythm({
           polySounds: newSounds,
           polyBeats: newBeatCount,
           polyState: newBeatState,
+          polySubNew: newSubdivision,
         });
 
         return newBeatState;
@@ -343,18 +517,25 @@ export default function Metronome() {
         type: PlayerType.Oscillator,
         sound: null,
       });
-      const polySub = getSubdivision(polySubdivision.value);
-      const polyState = totalPolyBeatsRef.current;
+
+      const polySub = 1; // ignored in Rhythm - DELETE
+      const polyState = new Array(calculateTotalBeats(polySubNew ?? [])).fill(
+        1,
+      ) as BeatState[];
+
       const polyBeat = parseInt(beatCount.value);
       const polyTotalBeats = parseInt(polyBeatCount.value);
 
+      const polySubdivisionNew = polySubNew;
+
       const polyRhythm = new Rhythm({
-        subdivision: polySub,
+        subdivision: polySub, // just satisfying the linter
         sound: polySound,
         beats: polyBeat,
         poly: polyTotalBeats,
         state: polyState,
         sounds: polySounds,
+        subNew: polySubdivisionNew,
       });
 
       // handle new rhythms when base rhythm
@@ -375,8 +556,8 @@ export default function Metronome() {
 
       polyRhythm.on('beatChange', updateBeatChange);
 
-      polyRhythm.on('updatedBeats', (updatedBeats: number) => {
-        const newBeatState = updateTotalBeatChange(updatedBeats);
+      polyRhythm.on('updatedBeats', (update: BeatUpdatePayload) => {
+        const newBeatState = updateTotalBeatChange(update);
         if (newBeatState) {
           polyRhythm.resetState(newBeatState);
         }
@@ -394,6 +575,7 @@ export default function Metronome() {
     polySounds,
     updateRhythm,
     loadToken,
+    subNew,
   ]);
 
   // cleanup only
@@ -428,14 +610,27 @@ export default function Metronome() {
     }
   }
 
-  function updateSubdivision(value: string): void {
-    const newSubdivision =
-      subdivisionData.find((s) => s.value === value) || subdivisionData[0];
+  function updateSubdivision(sub: SubdivisionName | ''): void {
+    if (!subNew || sub === '') return;
 
-    const newBeatState = getBeatState(
-      parseInt(beatCount.value),
-      newSubdivision.value,
-    );
+    const newSubdivision = getSubdivision(sub);
+    let updatedSubdivisions = [...subNew];
+    if (selectedBeat.value === 'all') {
+      updatedSubdivisions = updatedSubdivisions.map(() => newSubdivision);
+    } else {
+      updatedSubdivisions[parseInt(selectedBeat.value) - 1] = newSubdivision;
+    }
+
+    //USE something like this...
+    // MOVE TO HELPER
+    const newBeatState = new Array(
+      calculateTotalBeats(updatedSubdivisions),
+    ).fill(1) as BeatState[];
+
+    // const newBeatState = getBeatState(
+    //   parseInt(beatCount.value),
+    //   newSubdivision,
+    // );
 
     const newSounds = getBeatSoundState(
       newBeatState.length,
@@ -444,31 +639,47 @@ export default function Metronome() {
     );
 
     if (conductor.current) {
-      const rhythm = conductor.current.getRhythm(0);
-      rhythm.resetState(newBeatState); // updates rhythm state
-      rhythm.setSubdivision(getSubdivision(newSubdivision.value));
-      rhythm.updateSounds(newSounds);
+      conductor.current
+        .getRhythm(0)
+        .updateStates(
+          updatedSubdivisions,
+          newBeatState,
+          newSounds,
+          conductor.current.bpm,
+        );
     }
 
     totalBeatsRef.current = newBeatState; // used in useEffect
+
     updateRhythm({
       state: newBeatState,
-      subdivision: newSubdivision,
+      // subdivision: newSubdivision,
       sounds: newSounds,
+      subNew: updatedSubdivisions,
     });
 
     soundsRef.current = newSounds;
-    subdivisionRef.current = newSubdivision;
+    // subdivisionRef.current = newSubdivision;
   }
 
-  function updatePolySubdivision(value: string): void {
-    const newSubdivision =
-      subdivisionData.find((s) => s.value === value) || subdivisionData[0];
+  function updatePolySubdivision(sub: SubdivisionName | ''): void {
+    if (!polySubNew || sub === '') return;
 
-    const newBeatState = getBeatState(
-      parseInt(polyBeatCount.value),
-      newSubdivision.value,
-    );
+    const newSubdivision = getSubdivision(sub);
+    let updatedSubdivisions = [...polySubNew];
+
+    if (polySelectedBeat.value === 'all') {
+      updatedSubdivisions = updatedSubdivisions.map(() => newSubdivision);
+    } else {
+      updatedSubdivisions[parseInt(polySelectedBeat.value) - 1] =
+        newSubdivision;
+    }
+
+    updatedSubdivisions[parseInt(polySelectedBeat.value) - 1] = newSubdivision;
+
+    const newBeatState = new Array(
+      calculateTotalBeats(updatedSubdivisions),
+    ).fill(1) as BeatState[];
 
     const newSounds = getBeatSoundState(
       newBeatState.length,
@@ -477,21 +688,30 @@ export default function Metronome() {
     );
 
     if (conductor.current) {
-      const rhythm = conductor.current.getRhythm(1);
-      rhythm.resetState(newBeatState); // updates rhythm state
-      rhythm.setSubdivision(getSubdivision(newSubdivision.value));
-      rhythm.updateSounds(newSounds);
+      // const rhythm = conductor.current.getRhythm(1);
+      // rhythm.resetState(newBeatState); // updates rhythm state
+      // rhythm.setSubdivision(getSubdivision(newSubdivision.value));
+      // rhythm.updateSounds(newSounds);
+      conductor.current
+        .getRhythm(1)
+        .updateStates(
+          updatedSubdivisions,
+          newBeatState,
+          newSounds,
+          conductor.current.bpm,
+        );
     }
 
     totalPolyBeatsRef.current = newBeatState; // used in useEffect
     updateRhythm({
       polyState: newBeatState,
-      polySubdivision: newSubdivision,
+      // polySubdivision: newSubdivision,
+      polySubNew: updatedSubdivisions,
       polySounds: newSounds,
     });
 
     polySoundsRef.current = newSounds;
-    polySubdivisionRef.current = newSubdivision;
+    // polySubdivisionRef.current = newSubdivision;
   }
 
   function updateFrequencyData(
@@ -558,8 +778,9 @@ export default function Metronome() {
   );
 
   function handleBeatCountChange(update: number): void {
+    // change subdivision array here as well
     const updatedBeat = parseInt((beatCountGhost ?? beatCount).value) + update;
-    if (updatedBeat < 1 || updatedBeat > 11) return;
+    if (updatedBeat < 1 || updatedBeat > 10) return;
 
     updateBeatCount(updatedBeat.toString());
   }
@@ -567,7 +788,7 @@ export default function Metronome() {
   function handlePolyBeatCountChange(update: number): void {
     const updatedBeat =
       parseInt((polyBeatCountGhost ?? polyBeatCount).value) + update;
-    if (updatedBeat < 1 || updatedBeat > 11) return;
+    if (updatedBeat < 1 || updatedBeat > 10) return;
 
     updatePolyBeatCount(updatedBeat.toString());
   }
@@ -575,19 +796,36 @@ export default function Metronome() {
   function updateBeatCount(value: string): void {
     const updatedBeatCount = parseInt(value);
 
+    let defaultSub = SubdivisionKeyValue.base;
+    if (selectedBeat.value === 'all' && subdivisionPerBeat.value) {
+      defaultSub = getSubdivision(subdivisionPerBeat.value);
+    }
+
+    const newSubdivision = buildSubdivision(
+      updatedBeatCount,
+      subNew,
+      defaultSub,
+    );
+
     if (conductor.current) {
       const rhythm = conductor.current.getRhythm(0);
 
       conductor.current.updateBeats(updatedBeatCount, null);
+
       const newBeatCount = getBeatCount(parseInt(value));
 
-      const newBeatState = getBeatState(updatedBeatCount, subdivision.value);
+      // const newBeatState = getBeatState(updatedBeatCount, subdivision.value);
+      const newBeatState = buildBeatState(
+        calculateTotalBeats(newSubdivision),
+        totalBeats,
+      );
 
       if (!isRunning) {
         rhythm.resetState(newBeatState);
         // update beat sounds state
         const newSounds = getBeatSoundState(newBeatState.length, sounds);
         rhythm.updateSounds(newSounds);
+        rhythm.setSubdivisionNew(newSubdivision);
         soundsRef.current = newSounds;
 
         beatCountRef.current = newBeatCount;
@@ -596,6 +834,7 @@ export default function Metronome() {
           sounds: newSounds,
           state: newBeatState,
           beats: newBeatCount,
+          subNew: newSubdivision,
         });
       } else {
         if (value !== beatCount.value) {
@@ -618,14 +857,29 @@ export default function Metronome() {
   function updatePolyBeatCount(value: string): void {
     const updatedBeatCount = parseInt(value);
 
+    let defaultSub = SubdivisionKeyValue.base;
+    if (polySelectedBeat.value === 'all' && polySubdivisionPerBeat.value) {
+      defaultSub = getSubdivision(polySubdivisionPerBeat.value);
+    }
+
+    const newSubdivision = buildSubdivision(
+      updatedBeatCount,
+      polySubNew,
+      defaultSub,
+    );
+
     if (conductor.current) {
       const rhythm = conductor.current.getRhythm(1);
 
       rhythm.updateBeats(null, updatedBeatCount, isRunning);
       const newBeatCount = getBeatCount(parseInt(value));
-      const newBeatState = getBeatState(
-        updatedBeatCount,
-        polySubdivision.value,
+      // const newBeatState = getBeatState(
+      //   updatedBeatCount,
+      //   polySubdivision.value,
+      // );
+      const newBeatState = buildBeatState(
+        calculateTotalBeats(newSubdivision),
+        totalPolyBeats,
       );
       if (!isRunning) {
         rhythm.resetState(newBeatState);
@@ -633,12 +887,14 @@ export default function Metronome() {
         // update poly beat sounds state
         const newSounds = getBeatSoundState(newBeatState.length, polySounds);
         rhythm.updateSounds(newSounds);
+        rhythm.setSubdivisionNew(newSubdivision);
         polySoundsRef.current = newSounds;
 
         updateRhythm({
           polySounds: newSounds,
           polyState: newBeatState,
           polyBeats: newBeatCount,
+          polySubNew: newSubdivision,
         });
       } else {
         setPolyBeatCountGhost(newBeatCount);
@@ -653,6 +909,7 @@ export default function Metronome() {
    */
   function updateUsePolyrhythm(usePoly: boolean): void {
     updateRhythm({ usePoly });
+
     if (!usePoly && selectedSetting === 'polyrhythm') {
       setSelectedSetting('metronome');
     }
@@ -706,6 +963,7 @@ export default function Metronome() {
    * ++++++++++++++++++++
    */
   const handleBeatClick = (i: number): void => {
+    console.log(totalBeats);
     const state = Math.abs(totalBeats[i] - 1) as BeatState;
     updateRhythm({
       state: totalBeats.map((value, index) => (index === i ? state : value)),
@@ -733,6 +991,92 @@ export default function Metronome() {
     if (conductor.current) {
       const rhythm = conductor.current.getRhythm(1);
       rhythm.updateState(i, state);
+    }
+  };
+
+  /**
+   * ++++++++++++++++++++++++++
+   * Subdivision Update New
+   * ++++++++++++++++++++++++++
+   */
+  const updateSubdivisionNew = (sub: SubdivisionName, beat: number): void => {
+    if (!subNew) return;
+
+    // get new subdivision floating point value
+    const updatedSubdivisions = [...subNew];
+    updatedSubdivisions[beat] = getSubdivision(sub);
+
+    // remap BeatState
+    const updatedState = new Array(
+      calculateTotalBeats(updatedSubdivisions),
+    ).fill(1) as BeatState[];
+
+    // remap SoundState
+    const updatedSounds = getBeatSoundState(
+      calculateTotalBeats(updatedSubdivisions),
+      soundsRef.current,
+      Sound.Oscillator,
+    );
+
+    // update UI state
+    updateRhythm({
+      subNew: updatedSubdivisions,
+      state: updatedState,
+      sounds: updatedSounds,
+    });
+
+    if (conductor.current) {
+      // update timing engine
+      conductor.current
+        .getRhythm(0)
+        .updateStates(
+          updatedSubdivisions,
+          updatedState,
+          updatedSounds,
+          conductor.current.bpm,
+        );
+    }
+  };
+
+  const updatePolySubdivisionNew = (
+    sub: SubdivisionName,
+    beat: number,
+  ): void => {
+    if (!polySubNew) return;
+
+    // get new subdivision floating point value
+    const updatedSubdivisions = [...polySubNew];
+    updatedSubdivisions[beat] = getSubdivision(sub);
+
+    // update BeatState
+    const updatedState = new Array(
+      calculateTotalBeats(updatedSubdivisions),
+    ).fill(1) as BeatState[];
+
+    // update SoundState
+    const updatedSounds = getBeatSoundState(
+      calculateTotalBeats(updatedSubdivisions),
+      polySoundsRef.current,
+      Sound.HiHat,
+    );
+
+    // update UI state
+    updateRhythm({
+      polySubNew: updatedSubdivisions,
+      polyState: updatedState,
+      polySounds: updatedSounds,
+    });
+
+    if (conductor.current) {
+      // update timing engine
+      conductor.current
+        .getRhythm(1)
+        .updateStates(
+          updatedSubdivisions,
+          updatedState,
+          updatedSounds,
+          conductor.current.bpm,
+        );
     }
   };
 
@@ -837,6 +1181,8 @@ export default function Metronome() {
           subdivision={
             Subdivisions[subdivision.value as keyof typeof Subdivisions]
           }
+          subdivisionNew={subNew ?? []}
+          polySubdivisionNew={polySubNew ?? []}
           subdivisionIcon={subdivision.icon}
           polySubdivision={
             Subdivisions[polySubdivision.value as keyof typeof Subdivisions]
@@ -858,6 +1204,8 @@ export default function Metronome() {
           polyBeatSounds={polySounds}
           handleSoundSelection={updateBeatSounds}
           handlePolySoundSelection={updatePolyBeatSounds}
+          handleSubdivisionUpdate={updateSubdivisionNew}
+          handlePolySubdivisionUpdate={updatePolySubdivisionNew}
         />
       </section>
       <section className="settings-toggle-row">
@@ -897,7 +1245,7 @@ export default function Metronome() {
                   onChange={updateBeatCount}
                 />
                 <button
-                  disabled={(beatCountGhost ?? beatCount).value === '11'}
+                  disabled={(beatCountGhost ?? beatCount).value === '10'}
                   className="ml-2 color-white"
                   onClick={() => handleBeatCountChange(1)}
                 >
@@ -907,15 +1255,30 @@ export default function Metronome() {
             </section>
 
             {/* Subdivision */}
-            <section className="flex width-100 space-between align-center">
+            <section className="flex width-100 space-between align-center f-gap4">
               <div className="text-light font-size-13 text-left flex-1">
                 subdivision
               </div>
               <div className="flex flex-1">
                 <Dropdown
                   variant="full"
-                  data={subdivisionData}
-                  currentValue={subdivision}
+                  data={subdivisionOptions}
+                  currentValue={selectedBeat}
+                  onChange={(value) => {
+                    const option = subdivisionOptions.find((option) => {
+                      return option.value === value;
+                    });
+                    if (option) {
+                      setSelectedBeat(option);
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex flex-1">
+                <Dropdown
+                  variant="full"
+                  data={subdivisionDataWithEmpty}
+                  currentValue={subdivisionPerBeat}
                   onChange={updateSubdivision}
                 />
               </div>
@@ -940,8 +1303,8 @@ export default function Metronome() {
               <section className="flex flex-wrap justify-center width-100 align-center mb-2 f-gap4">
                 <RhythmState
                   onUpdate={(state) => updateBeatState(state)}
-                  beats={beatCount}
                   disabled={false}
+                  subdivisions={subNew!}
                   size="sm"
                   state={totalBeats}
                   sounds={sounds}
@@ -994,7 +1357,7 @@ export default function Metronome() {
                   />
                   <button
                     disabled={
-                      (polyBeatCountGhost ?? polyBeatCount).value === '11'
+                      (polyBeatCountGhost ?? polyBeatCount).value === '10'
                     }
                     className="ml-2 color-white"
                     onClick={() => handlePolyBeatCountChange(1)}
@@ -1006,15 +1369,30 @@ export default function Metronome() {
             )}
 
             {usePolyrhythm && (
-              <section className="flex width-100 space-between align-center indented">
+              <section className="flex width-100 space-between align-center indented f-gap4">
                 <div className="text-light font-size-13 flex-1 text-left">
                   subdivision
                 </div>
                 <div className="flex flex-1">
                   <Dropdown
                     variant="full"
+                    data={polySubdivisionOptions}
+                    currentValue={polySelectedBeat}
+                    onChange={(value) => {
+                      const option = polySubdivisionOptions.find(
+                        (option) => option.value === value,
+                      );
+                      if (option) {
+                        setPolySelectedBeat(option);
+                      }
+                    }}
+                  />
+                </div>
+                <div className="flex flex-1">
+                  <Dropdown
+                    variant="full"
                     data={subdivisionData}
-                    currentValue={polySubdivision}
+                    currentValue={polySubdivisionPerBeat}
                     onChange={updatePolySubdivision}
                   />
                 </div>
@@ -1042,7 +1420,7 @@ export default function Metronome() {
               <section className="flex flex-wrap justify-center width-100 align-center mb-2 f-gap4">
                 <RhythmState
                   onUpdate={(state) => updatePolyBeatState(state)}
-                  beats={polyBeatCount}
+                  subdivisions={polySubNew!}
                   disabled={false}
                   size="sm"
                   sounds={polySounds}

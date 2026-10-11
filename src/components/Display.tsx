@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import '../css/Display.css';
+import type { SubdivisionName } from '../services/subdivision/types';
 import { baseBeatStore, polyBeatStore } from '../timing_engine/beatStore';
 import { Sound } from '../timing_engine/oscillator.types';
 import type { BeatState } from '../timing_engine/rhythm.types';
@@ -23,12 +24,19 @@ interface DisplayProps {
   polyBeatCountGhost: number | null;
   beatSounds: Sound[][];
   polyBeatSounds: Sound[][];
+  subdivisionNew: number[];
+  polySubdivisionNew: number[];
   updateBPM: (value: number) => void;
   togglePlayback: () => void;
   handleBeatClick: (i: number) => void;
   handleSoundSelection: (sound: Sound, index: number) => void;
   handlePolySoundSelection: (sound: Sound, index: number) => void;
   handlePolyBeatClick: (i: number) => void;
+  handleSubdivisionUpdate: (subdivision: SubdivisionName, beat: number) => void;
+  handlePolySubdivisionUpdate: (
+    subdivision: SubdivisionName,
+    beat: number,
+  ) => void;
 }
 
 function Display({
@@ -53,6 +61,10 @@ function Display({
   polyBeatSounds,
   handleSoundSelection,
   handlePolySoundSelection,
+  subdivisionNew,
+  handleSubdivisionUpdate,
+  handlePolySubdivisionUpdate,
+  polySubdivisionNew,
 }: DisplayProps) {
   return (
     <div className="metronome">
@@ -61,12 +73,14 @@ function Display({
         <BPMGrid
           beats={beats}
           beatStore={baseBeatStore}
+          subdivisionNew={subdivisionNew}
           subdivision={subdivision}
           totalBeats={totalBeats}
           handleBeatClick={(i: number) => handleBeatClick(i)}
           beatCountGhost={beatCountGhost}
           beatSounds={beatSounds}
           handleSoundSelection={handleSoundSelection}
+          handleSubdivisionUpdate={handleSubdivisionUpdate}
         />
 
         {/*  BPM Rotary Dial | Play/Pause | BPM Tap */}
@@ -90,8 +104,10 @@ function Display({
             totalBeats={totalPolyBeats}
             beatCountGhost={polyBeatCountGhost}
             beatSounds={polyBeatSounds}
+            subdivisionNew={polySubdivisionNew}
             handleBeatClick={(i: number) => handlePolyBeatClick(i)}
             handleSoundSelection={handlePolySoundSelection}
+            handleSubdivisionUpdate={handlePolySubdivisionUpdate}
           />
         )}
 

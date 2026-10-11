@@ -1,4 +1,8 @@
 .grid-container {
+  --radius: 198px;
+  --dot-size: 25px;
+  --sub-size: 10px;
+  --squeeze: 0.85;
   display: flex;
   justify-content: center;
   width: var(--width-lg);
@@ -37,33 +41,58 @@
   }
 }
 
-.grid-container.ghost .dot {
-  border: 2px solid var(--muted-light-purple);
-  background-color: transparent;
-  left: 46.2%;
-  top: 46.4%;
-}
-
+/* every dot is centered on the same point and pushed out by --radius, so
+beat and subdivision dots share one circle. change sizes via the vars on the
+container and the centering follows */
 .grid-container .dot {
+  --size: var(--dot-size);
+  --pos: var(--i);
   position: absolute;
-  top: 47%;
-  left: 46.8%;
-  width: 25px;
-  height: 25px;
+  width: var(--size);
+  height: var(--size);
+  left: calc(50% - var(--size) / 2);
+  top: calc(50% - var(--size) / 2);
   background-color: var(--pink-purple);
   border-radius: 50%;
-  transform: rotate(calc(360deg / var(--beats) * var(--i) - 90deg))
-    translate(199px) rotate(calc(-360deg / var(--beats) * var(--i)));
+  transform: rotate(calc(360deg / var(--beats) * var(--pos) - 90deg))
+    translate(var(--radius)) rotate(calc(-360deg / var(--beats) * var(--pos)));
   transform-origin: center;
   z-index: 6;
   pointer-events: auto;
 }
 
+.grid-container .dot.subdivision {
+  --size: var(--sub-size);
+  background-color: var(--light-purple);
+}
+
+/* pull each beat's subdivisions toward the middle of their gap so they sit
+closer together. --squeeze 1 = even spacing. ghost dots use a plain index
+for --i rather than beat + fraction, so they're left out */
+.grid-container:not(.ghost) .dot.subdivision {
+  --beat: round(down, var(--i), 1);
+  --pos: calc(
+    var(--beat) + 0.5 + (var(--i) - var(--beat) - 0.5) * var(--squeeze)
+  );
+}
+
+/* ghost dots carry a 2px border outside their width (content-box) */
+.grid-container.ghost .dot {
+  border: 2px solid var(--muted-light-purple);
+  background-color: transparent;
+  left: calc(50% - var(--size) / 2 - 2px);
+  top: calc(50% - var(--size) / 2 - 2px);
+}
+
+/* .grid-container.small .dot {
+  z-index: 8;
+} */
+
 .grid-container .dot.off {
   background-color: var(--dark-gray) !important;
 }
-.grid-container > .dot.off.active,
-.grid-container.small > .dot.off.active {
+
+.grid-container > .dot.off.active {
   background-color: #8b8b8b !important;
 }
 
@@ -77,23 +106,8 @@
 .dot.menu-open {
   z-index: 20;
 }
-.grid-container.ghost > .dot.subdivision {
-  top: 48%;
-  left: 47.8%;
-  background: transparent;
-}
-.grid-container .dot.subdivision {
-  width: 10px;
-  height: 10px;
-  background-color: var(--light-purple);
-  left: 48.8%;
-  top: 49%;
-  transform: rotate(calc(360deg / var(--beats) * var(--i) - 90deg))
-    translate(197px) rotate(calc(-360deg / var(--beats) * var(--i)));
-}
 
-.grid-container .dot.active,
-.grid-container.small .dot.active {
+.grid-container .dot.active {
   background-color: var(--white) !important;
 }
 
@@ -102,51 +116,11 @@
 }
 
 .grid-container.small {
-  display: flex;
-  justify-content: center;
+  --radius: 176px;
+  --dot-size: 15px;
+  --sub-size: 10px;
   width: 350px;
   height: 350px;
-  border-radius: 50%;
-  border: 3px solid var(--light-black);
-  z-index: 5;
-}
-
-.grid-container.small.ghost .dot {
-  border: 2px solid var(--muted-light-purple);
-  background-color: transparent;
-  left: 47.1%;
-  top: 47.5%;
-}
-
-.grid-container.small .dot {
-  position: absolute;
-  top: 48%;
-  left: 47.8%;
-  width: 15px;
-  height: 15px;
-  /* transition: all 0.1s linear; */
-  background-color: var(--pink-purple);
-  border-radius: 50%;
-  transform: rotate(calc(360deg / var(--beats) * var(--i) - 90deg))
-    translate(175px) rotate(calc(-360deg / var(--beats) * var(--i)));
-  transform-origin: center;
-  z-index: 8;
-}
-
-.grid-container.small .dot.subdivision {
-  width: 10px;
-  height: 10px;
-  background-color: var(--light-purple);
-  left: 49%;
-  top: 49%;
-  transform: rotate(calc(360deg / var(--beats) * var(--i) - 90deg))
-    translate(177px) rotate(calc(-360deg / var(--beats) * var(--i)));
-}
-
-.grid-container.small.ghost .dot.subdivision {
-  left: 47.8% !important;
-  background-color: transparent !important;
-  top: 48% !important;
 }
 
 /*
@@ -158,63 +132,19 @@ for mobile
 
 @media (max-width: 1500px) {
   .grid-container {
+    --radius: 161px;
+    --dot-size: 20px;
+    --sub-size: 7px;
     width: 320px !important;
     height: 320px !important;
   }
 
-  .grid-container .dot {
-    left: 46%;
-    transform: rotate(calc(360deg / var(--beats) * var(--i) - 90deg))
-      translate(160px) rotate(calc(-360deg / var(--beats) * var(--i)));
-  }
-
-  .grid-container.ghost .dot {
-    left: 45.2% !important;
-    top: 46.4% !important;
-  }
-
-  .grid-container .dot.subdivision {
-    width: 10px;
-    height: 10px;
-    background-color: var(--light-purple);
-    left: 48%;
-    top: 48%;
-    transform: rotate(calc(360deg / var(--beats) * var(--i) - 90deg))
-      translate(162px) rotate(calc(-360deg / var(--beats) * var(--i)));
-  }
-
-  .grid-container.ghost > .dot.subdivision {
-    left: 46.7% !important;
-    top: 46.7% !important;
-  }
-
   .grid-container.small {
+    --radius: 136px;
+    --dot-size: 15px;
+    --sub-size: 7px;
     width: 270px !important;
     height: 270px !important;
-  }
-
-  .grid-container.small.ghost div.dot:not(.subdivision) {
-    left: 46.3% !important;
-    top: 47.1% !important;
-  }
-
-  .grid-container.small > .dot {
-    left: 47%;
-    transform: rotate(calc(360deg / var(--beats) * var(--i) - 90deg))
-      translate(135px) rotate(calc(-360deg / var(--beats) * var(--i)));
-  }
-
-  .grid-container.small .dot.subdivision {
-    background-color: var(--light-purple);
-    left: 48%;
-    top: 48%;
-    transform: rotate(calc(360deg / var(--beats) * var(--i) - 90deg))
-      translate(137px) rotate(calc(-360deg / var(--beats) * var(--i)));
-  }
-
-  .grid-container.small.ghost .dot.subdivision {
-    left: 47.5% !important;
-    top: 47% !important;
   }
 
   .bpm-spinner__rotary {

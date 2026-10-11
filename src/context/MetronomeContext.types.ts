@@ -3,6 +3,8 @@ import type { RhythmBlock } from './BuilderContext.types';
 export type RhythmSlim = Omit<RhythmBlock, 'section'> & {
   createdAt: string | null;
   updatedAt: string | null;
+  subNew?: number[];
+  polySubNew?: number[];
 };
 
 export type MetronomeContextType = {

@@ -60,6 +60,7 @@ export class Conductor extends Emitter<CondcutorEvents> {
     if (!this.isRunning) return;
 
     for (const rhythm of this.rhythms) {
+      // console.log(rhythm.nextNote, this.currentTime + Conductor.LOOK_AHEAD);
       while (rhythm.nextNote < this.currentTime + Conductor.LOOK_AHEAD) {
         rhythm.play();
         rhythm.advance(this.bpm, this.currentTime);
@@ -213,13 +214,17 @@ export class Conductor extends Emitter<CondcutorEvents> {
   }
 
   generateSubdivisionTable(r1: Rhythm, r2: Rhythm): number[] | undefined {
-    const beatSpacing = this.cleanFloat(r1.beats / r2.poly);
-    const subSpacing = this.cleanFloat(beatSpacing * r2.subdivision);
-    const totalSteps = Math.round(r2.poly / r2.subdivision);
-
     const beatPositionGrid: number[] = [];
-    for (let i = 0; i < totalSteps; i++) {
-      beatPositionGrid.push(this.cleanFloat(1 + i * subSpacing));
+    const spacing = this.cleanFloat(r1.beats / r2.poly);
+
+    // remove bang once subNew is no longer optional
+    for (let i = 0; i < r2.subNew!.length; i++) {
+      const sub = r2.subNew![i];
+      const count = 1 / sub;
+
+      for (let j = i * count; j < (1 + i) * count; j++) {
+        beatPositionGrid.push(j * spacing * sub + 1);
+      }
     }
 
     return beatPositionGrid;

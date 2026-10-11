@@ -7,12 +7,18 @@ export type RhythmParams = {
   state: BeatState[];
   poly?: number;
   sounds: Sound[][];
+  subNew?: number[];
 };
 
 export type BeatState = 0 | 1;
 
+export type BeatUpdatePayload = {
+  beats: number;
+  sub?: number[];
+};
+
 export type RhythmEvents = {
   scheduled: number;
   beatChange: number;
-  updatedBeats: number;
+  updatedBeats: BeatUpdatePayload;
 };

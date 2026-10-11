@@ -35,7 +35,7 @@ select {
   border: none;
   background: rgba(36, 36, 36, 0.5);
   padding: 10px 15px;
-  transition: 0.4s;
+  /* transition: 0.4s; */
   cursor: pointer;
   display: flex;
   justify-content: space-between;

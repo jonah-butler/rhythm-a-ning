@@ -1,28 +1,31 @@
 import '../css/Dropdown.css';
 
-export type DropdownOptions = {
-  label: string;
-  value: string;
+export type DropdownOptions<
+  V extends string = string,
+  L extends string = string,
+> = {
+  label: L;
+  value: V;
   icon?: React.ReactNode;
 };
 
-interface DropdownProps {
-  data: DropdownOptions[];
+interface DropdownProps<V extends string> {
+  data: DropdownOptions<V>[];
   label?: string;
-  currentValue: DropdownOptions;
+  currentValue: DropdownOptions<V>;
   disabled?: boolean;
   variant?: 'small' | 'medium' | 'large' | 'full';
-  onChange: (value: string) => void;
+  onChange: (value: V) => void;
 }
 
-function Dropdown({
+function Dropdown<V extends string>({
   data,
   label,
   currentValue,
   onChange,
   disabled = false,
   variant = 'medium',
-}: DropdownProps) {
+}: DropdownProps<V>) {
   return (
     <div className={`dropdown ${variant}`}>
       <div className="dropdown__label-container">{label}</div>
@@ -31,7 +34,7 @@ function Dropdown({
         className={variant}
         disabled={disabled}
         value={currentValue.value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => onChange(e.target.value as V)}
       >
         {data.map((select) => {
           return (

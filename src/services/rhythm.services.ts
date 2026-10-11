@@ -18,6 +18,7 @@ export type RhythmBlockSlim = Pick<
   'bpm' | 'subdivision' | 'beats' | 'usePoly' | 'state'
 >;
 
+// DELETE
 export const getSubdivision = (subdivisionKey: string): number => {
   return Subdivisions[subdivisionKey as keyof typeof Subdivisions];
 };
@@ -28,6 +29,7 @@ export const getBeatCount = (beats: number | null): DropdownOptions => {
   return beatCountData.find((b) => b.value === beats?.toString()) || FOUR_BEATS;
 };
 
+// DELETE
 export const getSubdivisionData = (
   key: Subdivision | null,
 ): DropdownOptions => {
@@ -42,7 +44,7 @@ export const getBeatState = (
 ): BeatState[] => {
   let subdivision: number;
   if (typeof subdivisionKey === 'string') {
-    subdivision = getSubdivision(subdivisionKey);
+    subdivision = getSubdivision(subdivisionKey); // update
   } else {
     subdivision = subdivisionKey;
   }
@@ -50,20 +52,38 @@ export const getBeatState = (
   return new Array(beats / subdivision).fill(1);
 };
 
-// export const getBeatSoundState = (
-//   beats: number,
-//   previousSounds: Sound[],
-//   defaultSound?: Sound,
-// ): Sound[] => {
-//   const newSounds = new Array(beats).fill(defaultSound ?? Sound.HiHat);
-//   for (let i = 0; i < beats; i++) {
-//     if (previousSounds[i] !== undefined) {
-//       newSounds[i] = previousSounds[i];
-//     }
-//   }
+export const getSubdivionNew = (subdivision: string | Subdivision): number => {
+  return Subdivisions[subdivision as keyof typeof Subdivisions];
+};
 
-//   return newSounds;
-// };
+export const buildSubdivision = (
+  beats: number,
+  previousSub: DropdownOptions[],
+  defaultSub = Subdivisions.base,
+): number[] => {
+  const subs = [];
+  for (let i = 0; i < beats; i++) {
+    const sub = previousSub[i];
+    if (sub) {
+      subs.push(sub);
+    } else {
+      subs.push(defaultSub);
+    }
+  }
+
+  return subs;
+};
+
+export const buildBeatState = (
+  beats: number,
+  previousState: BeatState[],
+): BeatState[] => {
+  if (beats < previousState.length) {
+    return previousState.splice(0, beats);
+  }
+  const beatDiff = beats - previousState.length;
+  return [...previousState, ...new Array(beatDiff).fill(1)];
+};
 
 export const getBeatSoundState = (
   beats: number,

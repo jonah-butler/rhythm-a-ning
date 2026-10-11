@@ -1,6 +1,6 @@
 import { type DropdownOptions } from './components/Dropdown';
 
-import Decuplet from './assets/notation/decuplet.svg?react';
+// import Decuplet from './assets/notation/decuplet.svg?react';
 import Eighth from './assets/notation/eighth.svg?react';
 import Nonuplet from './assets/notation/nonuplet.svg?react';
 import Quarter from './assets/notation/quarter.svg?react';
@@ -53,11 +53,11 @@ export const subdivisionData: DropdownOptions[] = [
     value: 'nonuplet',
     icon: <Nonuplet className="note-svg" />,
   },
-  {
-    label: 'decuplet',
-    value: 'decuplet',
-    icon: <Decuplet className="note-svg" />,
-  },
+  // {
+  //   label: 'decuplet',
+  //   value: 'decuplet',
+  //   icon: <Decuplet className="note-svg" />,
+  // },
 ];
 
 export const beatCountData: DropdownOptions[] = [
@@ -101,10 +101,10 @@ export const beatCountData: DropdownOptions[] = [
     label: '10',
     value: '10',
   },
-  {
-    label: '11',
-    value: '11',
-  },
+  // {
+  //   label: '11',
+  //   value: '11',
+  // },
 ];
 
 export const tempoData = (): DropdownOptions[] => {

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 
 import BuilderIcon from '../assets/icons/builder.svg?react';
-import HeadphoneIcon from '../assets/icons/headphone.svg?react';
+// import HeadphoneIcon from '../assets/icons/headphone.svg?react';
 import LightningIcon from '../assets/icons/lightning.svg?react';
 import NoteIcon from '../assets/icons/note.svg?react';
 import SaveIcon from '../assets/icons/save.svg?react';
@@ -16,14 +16,14 @@ export default function Features() {
       <div className="mt-4 max-w-35 m-auto">
         <h1 className="font-size-40 line-h-1_2">
           Tools to Develop Your Time{' '}
-          <span className="color-pink-purple">And Strengthen Your Pocket</span>
+          {/* <span className="color-pink-purple">And Strengthen Your Pocket</span> */}
         </h1>
       </div>
 
       <div>
         <p className="color-secondary flex justify-center">
-          Rhythm-a-ning brings the metronome, rhythm builder, and notation
-          workspace all into one focused studio experience.
+          Rhythm-a-ning is a collection of rhythm tools, currently offering a
+          metronome and rhythm builder - more features coming soon!
         </p>
       </div>
 
@@ -50,14 +50,14 @@ export default function Features() {
           onClick={() => {}}
         />
 
-        <BigButton
+        {/* <BigButton
           icon={<HeadphoneIcon />}
           orientation="col"
           size="sm"
           header="Custom Voices"
           description="Customize oscillators and swap in custom drum sounds for multi-voice sequencing to build rhythms that work for you."
           onClick={() => {}}
-        />
+        /> */}
 
         <BigButton
           icon={<ShareIcon />}

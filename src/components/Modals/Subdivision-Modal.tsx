@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState, type RefObject } from 'react';
 import '../../css/Subdivision-Modal.css';
-import { subdivisionData } from '../../data';
+import { subdivisionData } from '../../services/subdivision/data';
+import { SubdivisionName } from '../../services/subdivision/types';
 import Dropdown from '../Dropdown';
 
 type SubdivisionModalProps = {
@@ -9,43 +10,48 @@ type SubdivisionModalProps = {
     y: number;
   };
   isVisible: boolean;
+  ref: RefObject<HTMLDivElement | null>;
   handleBlur: () => void;
+  onChange: (subdivision: SubdivisionName) => void;
 };
 
 export function SubdivisionModal({
   isVisible,
   handleBlur,
   coordinates,
+  onChange,
+  ref,
 }: SubdivisionModalProps) {
-  const modal = useRef<HTMLDivElement | null>(null);
-
   useEffect(() => {
     if (!isVisible) return;
     requestAnimationFrame(() => {
-      modal.current?.focus();
+      ref.current?.focus();
     });
-  }, [isVisible]);
+  }, [isVisible, ref]);
 
   const [selectedValue, setSelectedValue] = useState(subdivisionData[0]);
 
-  const handleChange = (value: string): void => {
+  const handleChange = (value: SubdivisionName): void => {
     handleBlur();
-    const newValue = subdivisionData.filter((data) => data.value === value)[0];
-    console.log(newValue);
+    const newValue = subdivisionData.find((data) => data.value === value);
+
+    if (!newValue) return;
+
     setSelectedValue(newValue);
+    onChange(value);
   };
 
   return (
     <div
-      ref={modal}
+      ref={ref}
       className="subdivision-modal"
       style={{
-        display: isVisible ? 'block' : 'none',
+        visibility: isVisible ? 'visible' : 'hidden',
         top: `${coordinates.y}px`,
         left: `${coordinates.x}px`,
       }}
       onBlur={(e) => {
-        if (!modal.current?.contains(e.relatedTarget as Node)) {
+        if (!ref.current?.contains(e.relatedTarget as Node)) {
           handleBlur();
         }
       }}

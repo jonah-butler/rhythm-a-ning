@@ -1,8 +1,10 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
-import { beatCountData, subdivisionData } from '../data';
+import { beatCountData } from '../data';
 import { parseMetronomeQueryParams } from '../helpers/metronome.helpers';
 import { rhythmFingerprint } from '../services/rhythm.services';
+import { getSubdivision } from '../services/subdivision';
+import { subdivisionData } from '../services/subdivision/data';
 import { Sound } from '../timing_engine/oscillator.types';
 import { Subdivisions } from '../timing_engine/types';
 import { MetronomeBuilderContext } from './MetronomeContext';
@@ -32,6 +34,10 @@ function buildInitialRhythm(search: string): RhythmSlim {
         Sound.Oscillator,
       ]) as RhythmSlim['sounds']);
 
+  const subdivisionNew = new Array(parseInt(beats.value)).fill(
+    getSubdivision(subdivision.value),
+  );
+
   const polyBeats = parsedDefaults.polyCount
     ? beatCountData[parsedDefaults.polyCount]
     : beatCountData[2];
@@ -39,6 +45,10 @@ function buildInitialRhythm(search: string): RhythmSlim {
   const polySubdivision = parsedDefaults.polySubdivision
     ? subdivisionData[parsedDefaults.polySubdivision]
     : subdivisionData[0];
+
+  const polySubdivisionNew = new Array(parseInt(polyBeats.value)).fill(
+    getSubdivision(polySubdivision.value),
+  );
 
   const polyState = parsedDefaults.polyBeatState
     ? parsedDefaults.polyBeatState
@@ -69,6 +79,8 @@ function buildInitialRhythm(search: string): RhythmSlim {
     name: '',
     createdAt: null,
     updatedAt: null,
+    subNew: subdivisionNew,
+    polySubNew: polySubdivisionNew,
   };
 }
 

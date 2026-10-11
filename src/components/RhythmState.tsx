@@ -2,11 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import '../css/RhythmState.css';
 import { Sound } from '../timing_engine/oscillator.types';
 import type { BeatState } from '../timing_engine/rhythm.types';
-import { type DropdownOptions } from './Dropdown';
 import SoundMenu from './Menus/SoundMenu';
 
 type RhythmStateProps = {
-  beats: DropdownOptions;
+  subdivisions: number[];
   disabled: boolean;
   size?: 'sm' | 'md' | 'lg';
   sounds?: Sound[][];
@@ -16,7 +15,7 @@ type RhythmStateProps = {
 };
 
 export default function RhythmState({
-  beats,
+  subdivisions,
   disabled = false,
   size = 'lg',
   sounds,
@@ -24,7 +23,7 @@ export default function RhythmState({
   onUpdate,
   onSoundChange,
 }: RhythmStateProps) {
-  const beatsParsed = Number(beats.value);
+  // const beatsParsed = Number(beats.value);
 
   const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -66,43 +65,55 @@ export default function RhythmState({
     };
   }, [openMenuIndex]);
 
-  function chunk<T>(arr: T[], size: number): T[][] {
+  function chunk<T>(arr: T[], sizes: number[]): T[][] {
     const result: T[][] = [];
-    for (let i = 0; i < arr.length; i += size) {
-      result.push(arr.slice(i, i + size));
+    let index = 0;
+    for (let i = 0; i < sizes.length; i++) {
+      const length = Math.round(1 / sizes[i]);
+      // console.log(index, length);
+      result.push(arr.slice(index, index + length));
+      index += length;
     }
+    // for (let i = 0; i < arr.length; i += size) {
+    //   result.push(arr.slice(i, i + size));
+    // }
     return result;
   }
 
   const toggleMenu = (flatIndex: number) => {
+    console.log(flatIndex);
     cancelMenuClose();
     setOpenMenuIndex((prev) => (prev === flatIndex ? null : flatIndex));
   };
 
-  const updateState = (row: number, noteIndex: number) => {
+  const updateState = (stateIndex: number) => {
     if (disabled) return;
 
-    const notesPerBeat = state!.length / beatsParsed;
-    const index = row * notesPerBeat + noteIndex;
+    // console.log(row, noteIndex);
 
-    const next = state!.map((v, i) => (i === index ? (v === 1 ? 0 : 1) : v));
+    // const notesPerBeat = state!.length / beatsParsed;
+    // const index = row * notesPerBeat + noteIndex;
+
+    const next = state!.map((v, i) =>
+      i === stateIndex ? (v === 1 ? 0 : 1) : v,
+    );
 
     // setBeatState(next);
     onUpdate(next);
   };
 
   function renderBeatRows() {
-    const notesPerBeat = state!.length / beatsParsed;
-    const rows = chunk(state!, notesPerBeat);
+    const rows = chunk(state!, subdivisions);
+    let index = 0;
 
     return rows.map((row, beatIndex) => (
       <div key={beatIndex} className={`beat-row ${size}`}>
         {row.map((value, noteIndex) => {
-          const flatIndex = beatIndex * notesPerBeat + noteIndex;
+          const stateIndex = index++;
           return (
             <div key={noteIndex} className="beat-note">
               <span
-                onClick={() => updateState(beatIndex, noteIndex)}
+                onClick={() => updateState(stateIndex)}
                 className={[
                   'beat',
                   noteIndex !== 0 && 'subdivided',
@@ -119,16 +130,16 @@ export default function RhythmState({
                     onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.stopPropagation();
-                      toggleMenu(flatIndex);
+                      toggleMenu(stateIndex);
                     }}
                   />
                   <SoundMenu
-                    isOpen={openMenuIndex === flatIndex}
-                    activeSounds={sounds[flatIndex]}
+                    isOpen={openMenuIndex === stateIndex}
+                    activeSounds={sounds[stateIndex]}
                     onKeepOpen={cancelMenuClose}
-                    onRequestClose={() => scheduleMenuClose(flatIndex)}
+                    onRequestClose={() => scheduleMenuClose(stateIndex)}
                     onClick={(sound) => {
-                      onSoundChange(sound, flatIndex);
+                      onSoundChange(sound, stateIndex);
                     }}
                   />
                 </>
