@@ -3,7 +3,10 @@ import { resolveSubdivisions } from '../services/subdivision';
 import { type RhythmBlock } from './BuilderContext.types';
 
 /** A block as saved in IndexedDB before the per-beat subdivision migration. */
-type LegacyRhythmBlock = Omit<RhythmBlock, 'subdivisions' | 'polySubdivisions'> &
+type LegacyRhythmBlock = Omit<
+  RhythmBlock,
+  'subdivisions' | 'polySubdivisions'
+> &
   Partial<Pick<RhythmBlock, 'subdivisions' | 'polySubdivisions'>> & {
     subdivision?: DropdownOptions;
     polySubdivision?: DropdownOptions;
@@ -46,15 +49,12 @@ export const averageTempo = (blocks: RhythmBlock[]): number => {
   return Math.floor(tempos.reduce((a, b) => a + b) / tempos.length);
 };
 
-export const totalTime = (blocks: RhythmBlock[]): string => {
+export const totalTime = (blocks: RhythmBlock[]): number => {
   const minutes = blocks.map((block) => {
     return (Number(block.beats.value) / block.bpm) * block.measures;
   });
 
-  return minutes
-    .reduce((a, b) => {
-      return a + b;
-    })
-    .toFixed(2)
-    .replace('.', ':');
+  return minutes.reduce((a, b) => {
+    return a + b;
+  });
 };

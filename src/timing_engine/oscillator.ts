@@ -11,7 +11,7 @@ import {
 export class SoundPlayer implements ISoundPlayer {
   private static soundMap = getSoundMap();
 
-  audioCtx: AudioContext;
+  audioCtx: AudioContext | OfflineAudioContext;
   outputNode: GainNode;
   frequency: number;
   beatOneOffset: number;

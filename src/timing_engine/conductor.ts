@@ -380,16 +380,14 @@ export class Conductor extends Emitter<CondcutorEvents> {
     if (this.iosUnlockElement) return;
     if (!/iPhone|iPad|iPod/.test(navigator.userAgent)) return;
 
-    this.masterGain.disconnect(this.audioCtx.destination);
+    const keepAliveGain = this.audioCtx.createGain();
     const streamDest = this.audioCtx.createMediaStreamDestination();
+
+    keepAliveGain.gain.value = 0.00001;
+
+    this.masterGain.disconnect(this.audioCtx.destination);
     this.masterGain.connect(streamDest);
 
-    // Without a continuous signal, the <audio> element stalls during silence
-    // between beats and replays buffered audio in a burst when the next note
-    // arrives, causing the rapid-fire stutter on iOS. A constant inaudible
-    // tone keeps the pipeline active.
-    const keepAliveGain = this.audioCtx.createGain();
-    keepAliveGain.gain.value = 0.00001;
     this.iosKeepAlive = this.audioCtx.createConstantSource();
     this.iosKeepAlive.connect(keepAliveGain);
     keepAliveGain.connect(streamDest);

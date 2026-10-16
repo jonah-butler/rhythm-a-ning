@@ -365,7 +365,6 @@ export default function Metronome() {
 
         // fix, move to helper, no !
         const newSubdivision = buildSubdivision(totalBeats, sub, defaultSub);
-        console.log(newSubdivision);
         // const newBeatState = new Array(
         //   calculateTotalBeats(newSubdivision!),
         // ).fill(1) as BeatState[];

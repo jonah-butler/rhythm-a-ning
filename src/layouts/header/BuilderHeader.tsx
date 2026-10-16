@@ -91,7 +91,7 @@ export default function BuilderHeader() {
   };
 
   const getWorkflowTime = (workflow: RhythmBlock[]): string => {
-    return totalTime(workflow);
+    return totalTime(workflow).toFixed(2).replace('.', ':');
   };
 
   const selectWorkflow = async (id: string): Promise<void> => {

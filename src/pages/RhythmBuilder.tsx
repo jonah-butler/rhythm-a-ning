@@ -11,8 +11,10 @@ import {
   SortableContext,
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import toWav from 'audiobuffer-to-wav';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
+import ExportIcon from '../assets/icons/export.svg?react';
 import PauseIcon from '../assets/icons/pause.svg?react';
 import PlayIcon from '../assets/icons/play.svg?react';
 import SaveIcon from '../assets/icons/save.svg?react';
@@ -23,10 +25,13 @@ import { DefaultRhythmBlock } from '../context/BuilderContext.types';
 import { useRhythmBuilderContext } from '../context/useBuilderContext';
 import { useIndexedDBContext } from '../context/useIndexedDBContext';
 import '../css/RhythmBuilder.css';
-import { generateUUID } from '../services/rhythm.services';
+import { generateUUID, getBeatSoundState } from '../services/rhythm.services';
 import { loadSounds } from '../services/sound.services';
 import { Conductor } from '../timing_engine/conductor';
 import { type WorkflowEmit } from '../timing_engine/conductor.types';
+import { SoundPlayer } from '../timing_engine/oscillator';
+import { PlayerType, Sound } from '../timing_engine/oscillator.types';
+import { type BeatState } from '../timing_engine/rhythm.types';
 
 export default function RhythmBuilder() {
   const {
@@ -35,7 +40,8 @@ export default function RhythmBuilder() {
     updateBlockOrder,
     getAverageTempo,
     getTotalMeasures,
-    getWorkflowTime,
+    getWorkflowTimeStr,
+    getWorkflowTimeInt,
     updateWorkflowName,
   } = useRhythmBuilderContext();
 
@@ -215,6 +221,128 @@ export default function RhythmBuilder() {
     }
   };
 
+  const exportWorkflow = async (): Promise<void> => {
+    setIsLoading(true);
+    toast('exporting workflow to .wav');
+    const sampleRate = 44100;
+    const tail = 0.5;
+    const leadIn = 0.01; // room for the oscillator attack ramp
+    const totalSeconds = getWorkflowTimeInt() * 60; // totalTime() is in minutes
+    const length = Math.ceil((leadIn + totalSeconds + tail) * sampleRate);
+    const offlineCtx = new OfflineAudioContext(1, length, sampleRate);
+    const gain = offlineCtx.createGain();
+    gain.connect(offlineCtx.destination);
+
+    const osc1 = new SoundPlayer({
+      audioCtx: offlineCtx,
+      outputNode: gain,
+      frequency: 750,
+      beatOneOffset: 3,
+      subdividedOffset: -3,
+      gain: 0.5,
+      type: PlayerType.Sound,
+      sound: Sound.Kick,
+    });
+
+    const osc2 = new SoundPlayer({
+      audioCtx: offlineCtx,
+      outputNode: gain,
+      frequency: 550,
+      beatOneOffset: 3,
+      subdividedOffset: -3,
+      gain: 0.5,
+      type: PlayerType.Sound,
+      sound: Sound.Kick,
+    });
+
+    const buildTickGrid = (subs: number[]): number[] => {
+      const grid: number[] = [];
+      subs.forEach((sub, beatIndex) => {
+        const ticks = Math.round(1 / sub);
+        for (let i = 0; i < ticks; i++) {
+          const value = beatIndex + 1 + i * sub;
+          const rounded = Math.round(value);
+          grid.push(Math.abs(rounded - value) < 1e-12 ? rounded : value);
+        }
+      });
+      return grid;
+    };
+
+    const scheduleRhythm = (
+      player: SoundPlayer,
+      blockStart: number,
+      measures: number,
+      spb: number,
+      beats: number,
+      poly: number,
+      subs: number[],
+      state: BeatState[],
+      sounds: Sound[][],
+    ): void => {
+      const grid = buildTickGrid(subs);
+      const measureLen = beats * spb;
+      const beatLen = spb * (beats / poly);
+
+      for (let m = 0; m < measures; m++) {
+        const measureStart = blockStart + m * measureLen;
+        grid.forEach((beat, step) => {
+          if (!state[step]) return;
+          const t = measureStart + (beat - 1) * beatLen;
+          player.play(t, beat === 1, !Number.isInteger(beat), sounds[step]);
+        });
+      }
+    };
+
+    let blockStart = leadIn;
+    for (const block of rhythmWorkflow.blocks) {
+      const beats = Number(block.beats.value);
+      const spb = 60 / block.bpm;
+
+      scheduleRhythm(
+        osc1,
+        blockStart,
+        block.measures,
+        spb,
+        beats,
+        beats,
+        block.subdivisions,
+        block.state,
+        block.sounds,
+      );
+
+      if (block.usePoly) {
+        scheduleRhythm(
+          osc2,
+          blockStart,
+          block.measures,
+          spb,
+          beats,
+          Number(block.polyBeats.value),
+          block.polySubdivisions,
+          block.polyState,
+          getBeatSoundState(
+            block.polyState.length,
+            block.polySounds,
+            Sound.Oscillator,
+          ),
+        );
+      }
+
+      blockStart += block.measures * beats * spb;
+    }
+
+    const rendered = await offlineCtx.startRendering();
+    const blob = new Blob([toWav(rendered)], { type: 'audio/wav' });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${rhythmWorkflow.name || 'rhythm'}.wav`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setIsLoading(false);
+  };
+
   const progressBarStyles = activeWorkflow
     ? ({
         '--animationLength': `${(
@@ -257,7 +385,7 @@ export default function RhythmBuilder() {
               Time
             </span>{' '}
             <span className="font-size-16 font-weight-600">
-              {getWorkflowTime()} min
+              {getWorkflowTimeStr()} min
             </span>
           </div>
           <div>
@@ -299,10 +427,18 @@ export default function RhythmBuilder() {
         />
         <button
           disabled={isLoading || !hasChange}
-          className="color-white"
+          className="color-white outline"
           onClick={() => save()}
         >
           <SaveIcon style={{ width: '18px' }} />
+        </button>
+
+        <button
+          className="color-white outline"
+          onClick={() => exportWorkflow()}
+          disabled={isLoading}
+        >
+          <ExportIcon style={{ width: '18px' }} />
         </button>
       </section>
 

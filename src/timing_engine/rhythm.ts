@@ -52,7 +52,14 @@ export class Rhythm extends Emitter<RhythmEvents> {
     this.tickGrid = this.buildTickGrid();
   }
 
-  constructor({ beats, sound, poly, state, sounds, subdivisions }: RhythmParams) {
+  constructor({
+    beats,
+    sound,
+    poly,
+    state,
+    sounds,
+    subdivisions,
+  }: RhythmParams) {
     super();
     this.beats = beats;
     this.sound = sound;
@@ -97,6 +104,7 @@ export class Rhythm extends Emitter<RhythmEvents> {
         grid.push(this.cleanFloat(beatIndex + 1 + i * sub));
       }
     });
+    console.log(grid);
     return grid;
   }
 
@@ -255,7 +263,10 @@ export class Rhythm extends Emitter<RhythmEvents> {
       if (this.isPoly) {
         this.emit('updatedBeats', { beats: this.poly, sub: this.subdivisions });
       } else {
-        this.emit('updatedBeats', { beats: this.beats, sub: this.subdivisions });
+        this.emit('updatedBeats', {
+          beats: this.beats,
+          sub: this.subdivisions,
+        });
       }
     }
 

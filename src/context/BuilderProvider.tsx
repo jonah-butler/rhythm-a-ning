@@ -68,7 +68,11 @@ export function RhythmBuilderProvider({ children }: { children: ReactNode }) {
     return averageTempo(rhythmWorkflow.blocks);
   };
 
-  const getWorkflowTime = (): string => {
+  const getWorkflowTimeStr = (): string => {
+    return totalTime(rhythmWorkflow.blocks).toFixed(2).replace('.', ':');
+  };
+
+  const getWorkflowTimeInt = (): number => {
     return totalTime(rhythmWorkflow.blocks);
   };
 
@@ -112,7 +116,8 @@ export function RhythmBuilderProvider({ children }: { children: ReactNode }) {
       updateBlockOrder,
       getTotalMeasures,
       getAverageTempo,
-      getWorkflowTime,
+      getWorkflowTimeStr,
+      getWorkflowTimeInt,
       deleteBlock,
       resetBlocks,
       setActiveBlocks,

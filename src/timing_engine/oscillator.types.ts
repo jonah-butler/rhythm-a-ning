@@ -10,7 +10,7 @@ export interface ISoundPlayer {
 }
 
 export type OscillatorParamsBase = {
-  audioCtx: AudioContext;
+  audioCtx: AudioContext | OfflineAudioContext;
   outputNode: GainNode;
   frequency: number;
   beatOneOffset: number;
