@@ -489,7 +489,10 @@ export default function RhythmBuilderCard({
               label=""
               variant="small"
               isChecked={block.usePoly}
-              onChange={(usePoly) => updateBlock(block.id, { usePoly })}
+              onChange={(usePoly) => {
+                updateBlock(block.id, { usePoly });
+                onChange();
+              }}
             />
           </div>
         </section>
