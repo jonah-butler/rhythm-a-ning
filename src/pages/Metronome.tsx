@@ -160,7 +160,13 @@ export default function Metronome() {
   );
 
   const subdivisionPerBeat = useMemo(() => {
-    const beat = parseInt(selectedBeat.value);
+    let beat = parseInt(selectedBeat.value);
+
+    const total = parseInt(beatCount.value);
+    if (beat > total) {
+      beat = total;
+    }
+
     if (isNaN(beat)) {
       const identicalSubs = subdivisions.every(
         (sub) => sub === subdivisions[0],
@@ -183,10 +189,16 @@ export default function Metronome() {
       (sub) => sub.value === getSubdivisionName(selectedSubIndex),
     )[0];
     return sub;
-  }, [selectedBeat, subdivisions]);
+  }, [selectedBeat, subdivisions, beatCount]);
 
   const polySubdivisionPerBeat = useMemo(() => {
-    const beat = parseInt(polySelectedBeat.value);
+    let beat = parseInt(polySelectedBeat.value);
+    const total = parseInt(polyBeatCount.value);
+
+    if (beat > total) {
+      beat = total;
+    }
+
     const sub0 = polySubdivisions[0];
     if (isNaN(beat)) {
       const identicalSubs = polySubdivisions.every((sub) => sub === sub0);
@@ -208,7 +220,7 @@ export default function Metronome() {
       (sub) => sub.value === getSubdivisionName(selectedSubIndex),
     )[0];
     return sub;
-  }, [polySelectedBeat, polySubdivisions]);
+  }, [polySelectedBeat, polySubdivisions, polyBeatCount]);
 
   // rhythm event callbacks are bound once, read selection from refs
   const selectedBeatRef = useRef(selectedBeat);
@@ -599,16 +611,10 @@ export default function Metronome() {
       updatedSubdivisions[parseInt(selectedBeat.value) - 1] = newSubdivision;
     }
 
-    //USE something like this...
-    // MOVE TO HELPER
-    const newBeatState = new Array(
+    const newBeatState = buildBeatState(
       calculateTotalBeats(updatedSubdivisions),
-    ).fill(1) as BeatState[];
-
-    // const newBeatState = getBeatState(
-    //   parseInt(beatCount.value),
-    //   newSubdivision,
-    // );
+      totalBeats,
+    );
 
     const newSounds = getBeatSoundState(
       newBeatState.length,
@@ -655,9 +661,10 @@ export default function Metronome() {
 
     updatedSubdivisions[parseInt(polySelectedBeat.value) - 1] = newSubdivision;
 
-    const newBeatState = new Array(
+    const newBeatState = buildBeatState(
       calculateTotalBeats(updatedSubdivisions),
-    ).fill(1) as BeatState[];
+      totalPolyBeats,
+    );
 
     const newSounds = getBeatSoundState(
       newBeatState.length,
