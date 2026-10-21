@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom';
-import Flare from '../components/Flare';
+// import Flare from '../components/Flare';
 import { AuthProvider } from '../context/AuthProvider';
 import { RhythmBuilderProvider } from '../context/BuilderProvider';
 import { IndexedDBProvider } from '../context/IndexedDBProvider';
@@ -20,8 +20,8 @@ export default function RootLayout() {
                 <Header />
                 <main id="appContainer">
                   <Outlet />
-                  <Flare y={0} x={100} />
-                  <Flare y={200} x={400} />
+                  {/* <Flare y={0} x={100} />
+                  <Flare y={200} x={400} /> */}
                 </main>
                 <Footer />
               </MenuProvider>

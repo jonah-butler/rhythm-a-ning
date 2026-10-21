@@ -5,7 +5,8 @@
   .home__container__top {
     border-bottom: 1px solid var(--light-black);
     padding: 1rem 0 2rem 0;
-    margin-bottom: 2rem;
+    margin-bottom: 3rem;
+    margin-top: 3rem;
   }
 }
 

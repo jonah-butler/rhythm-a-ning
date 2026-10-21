@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MenuPage, MenuPageDescription } from '../context/MenuContext.types';
 import { useMenuContext } from '../context/useMenuContext';
@@ -16,17 +17,25 @@ export default function Header() {
       <BuilderHeader />
     ) : null;
 
+  const isHome = useMemo(() => {
+    return currentPage === MenuPage.Home;
+  }, [currentPage]);
+
   return showHeaderMenu ? (
     <header>
       <div className="header__container">
         <section className="flex f-gap1">
-          <button
-            onClick={() => navigate('/')}
-            className="back-navigation color-white small mr-2"
-          >
-            &#x27E8;
-          </button>
-          <h3>{MenuPageDescription[currentPage].title}</h3>
+          {!isHome ? (
+            <button
+              onClick={() => navigate('/')}
+              className="back-navigation color-white small mr-2"
+            >
+              &#x27E8;
+            </button>
+          ) : null}
+          <h3 className={isHome ? 'ml-4' : ''}>
+            {MenuPageDescription[currentPage].title}
+          </h3>
         </section>
         {currentSideMenu}
       </div>

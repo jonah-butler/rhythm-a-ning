@@ -19,7 +19,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     () => ({
       currentPage,
       setCurrentPage,
-      showHeaderMenu: currentPage !== 'home',
+      showHeaderMenu: !!currentPage,
     }),
     [currentPage],
   );
