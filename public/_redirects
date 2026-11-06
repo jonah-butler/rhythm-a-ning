@@ -1,1 +1,17 @@
-/*    /index.html   200
+# Cloudflare Pages routing for rhythmaning.app
+# "/" is the static landing page (dist/index.html), so it needs no rule.
+# React routes are rewritten (200) to the app shell. The target is /app, not
+# /app.html, because Pages serves app.html at /app.
+# Don't add a "/*" catch-all: it would take over "/" and /assets/*.
+# Keep in sync with APP_ROUTES in vite.config.ts.
+
+/metronome              /app  200
+/builder                /app  200
+/login                  /app  200
+/register               /app  200
+/features               /app  200
+/verify-account         /app  200
+/reset-password         /app  200
+/verify-reset-password  /app  200
+/privacy-policy         /app  200
+/account                /app  200

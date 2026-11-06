@@ -1,24 +1,1365 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rhythm-a-ning: Online Metronome &amp; Rhythm Builder</title>
+    <meta
+      name="description"
+      content="A free online metronome and rhythm builder. Chain tempo changes, polyrhythms and subdivisions into one practice routine, play it in your browser, or export it as a .wav."
+    />
+    <link rel="canonical" href="https://rhythmaning.app/" />
+    <meta name="theme-color" content="#0B0B0D" />
+
+    <!-- Open Graph / link previews (Slack, iMessage, Discord, etc.) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Rhythm-a-ning" />
+    <meta property="og:url" content="https://rhythmaning.app/" />
+    <meta
+      property="og:title"
+      content="Rhythm-a-ning: Online Metronome &amp; Rhythm Builder"
+    />
+    <meta
+      property="og:description"
+      content="Your whole practice routine, as one click track. Tempo changes, polyrhythms and subdivisions — play it or export a .wav."
+    />
+    <meta property="og:image" content="https://rhythmaning.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Rhythm-a-ning: your whole practice routine, as one click track."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Rhythm-a-ning: Online Metronome &amp; Rhythm Builder"
+    />
+    <meta
+      name="twitter:description"
+      content="Your whole practice routine, as one click track."
+    />
+    <meta name="twitter:image" content="https://rhythmaning.app/og-image.png" />
+
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Rhythm-a-ning",
+        "url": "https://rhythmaning.app/",
+        "applicationCategory": "MusicApplication",
+        "operatingSystem": "Any (web browser)",
+        "description": "A free online metronome and rhythm builder with tempo changes, polyrhythms, subdivisions and .wav export.",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap"
       rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
     />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Rhythm A Ning: Online Metronome</title>
+
+    <style>
+      :root {
+        --bg: #0b0b0d;
+        --bg-raised: #0f0f12;
+        --card: #141417;
+        --well: #1d1d22;
+        --line: #1f1f24;
+        --border: #26262c;
+        --border-strong: #34343b;
+        --text: #f2f2f3;
+        --muted: #b4b4bc;
+        --faint: #8a8a94;
+        --accent: #ec4899;
+        --accent-text: #f472b6;
+        --accent-soft: rgba(236, 72, 153, 0.14);
+        --accent-line: #5a2a47;
+        --sans:
+          'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        --mono:
+          'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        line-height: 1.5;
+      }
+      a {
+        color: inherit;
+      }
+      a:focus-visible,
+      button:focus-visible,
+      input:focus-visible {
+        outline: 2px solid var(--accent-text);
+        outline-offset: 3px;
+      }
+      .wrap {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding-inline: 32px;
+      }
+      .eyebrow {
+        margin: 0;
+        font-family: var(--mono);
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent-text);
+      }
+      .label {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--faint);
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+
+      /* Buttons */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        min-height: 44px;
+        border-radius: 999px;
+        text-decoration: none;
+        font: inherit;
+        font-weight: 500;
+        cursor: pointer;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: var(--bg);
+        font-weight: 600;
+        border: 0;
+      }
+      .btn-primary:hover {
+        background: #f25faa;
+      }
+      .btn-ghost {
+        border: 1px solid var(--border-strong);
+        color: var(--text);
+        background: transparent;
+      }
+      .btn-ghost:hover {
+        border-color: #4a4a52;
+      }
+      .btn-lg {
+        font-size: 17px;
+        padding: 14px 26px;
+      }
+
+      /* Header */
+      .site-header {
+        border-bottom: 1px solid var(--line);
+      }
+      .site-header .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding-block: 14px;
+      }
+      .wordmark {
+        text-decoration: none;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .wordmark span {
+        color: var(--accent);
+      }
+      .nav {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        font-size: 15px;
+      }
+      .nav a {
+        text-decoration: none;
+        color: var(--muted);
+      }
+      .nav a:hover {
+        color: var(--text);
+      }
+      .nav .divider {
+        width: 1px;
+        height: 20px;
+        background: #2a2a30;
+      }
+      .nav .login {
+        color: var(--text);
+      }
+      .nav .btn {
+        color: var(--bg);
+        padding: 0 18px;
+      }
+
+      /* Hero */
+      .hero {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 64px;
+        align-items: center;
+        padding-block: 96px 88px;
+      }
+      .hero-copy {
+        flex: 1 1 480px;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
+      .hero h1 {
+        margin: 0;
+        font-size: clamp(40px, 6vw, 64px);
+        line-height: 1.02;
+        letter-spacing: -0.035em;
+        font-weight: 700;
+      }
+      .hero .lede {
+        margin: 0;
+        font-size: 19px;
+        line-height: 1.55;
+        color: var(--muted);
+        max-width: 34ch;
+      }
+      .hero-ctas {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      .hero .note {
+        margin: 0;
+        font-size: 14px;
+        color: var(--faint);
+      }
+
+      /* Demo metronome: mirrors the app's Display / BPM-Spinner / RhythmState */
+      .demo {
+        /* app design tokens (src/index.css) */
+        --m-pink: #f821ad;
+        --m-pink-muted: #c21c8884;
+        --m-purple: #9045e6;
+        --m-purple-muted: #7233bb93;
+        --m-ring: #242424;
+        --m-off: #393439;
+        --m-control: rgba(36, 36, 36, 0.5);
+
+        flex: 1 1 420px;
+        min-width: 0;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
+
+      /* Clock: every size is a fraction of the clock width (cqw) so it scales */
+      .clock {
+        container-type: inline-size;
+        position: relative;
+        width: min(100%, 340px);
+        aspect-ratio: 1;
+        margin: 8px auto 0;
+      }
+      .clock-ring {
+        position: absolute;
+        inset: 0;
+        border: 3px solid var(--m-ring);
+        border-radius: 50%;
+      }
+      .clock-arm {
+        position: absolute;
+        left: calc(50% - 1.5px);
+        top: 0;
+        width: 3px;
+        height: 50%;
+        background: var(--m-pink);
+        transform-origin: bottom center;
+        z-index: 3;
+        will-change: transform;
+      }
+      .clock-dot {
+        --size: 6.25cqw;
+        position: absolute;
+        width: var(--size);
+        height: var(--size);
+        border-radius: 50%;
+        background: var(--m-pink);
+        transform: translate(-50%, -50%);
+        z-index: 5;
+      }
+      .clock-dot.sub {
+        --size: 2.2cqw;
+        background: var(--m-purple);
+      }
+      .clock-dot.off {
+        background: var(--m-off);
+      }
+      .clock-dot.active {
+        background: #fff;
+      }
+      .clock-dot.off.active {
+        background: #8b8b8b;
+      }
+      .spinner {
+        position: absolute;
+        inset: 12.5%;
+        z-index: 4;
+      }
+      .rotary {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: #000;
+        border: 3px solid var(--m-ring);
+      }
+      .rotary i {
+        position: absolute;
+        width: 1.1cqw;
+        height: 1.1cqw;
+        border-radius: 50%;
+        background: var(--m-pink);
+        transform: translate(-50%, -50%);
+      }
+      .tap {
+        position: absolute;
+        top: 48%;
+        left: 50%;
+        width: 62.7%;
+        aspect-ratio: 1;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        border: 4px solid var(--m-pink);
+        box-shadow: 0 0 5px 5px var(--m-pink);
+        background: #000;
+        color: var(--text);
+        font: inherit;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background-color 0.3s linear;
+      }
+      .tap:active {
+        background: var(--m-pink);
+        box-shadow: none;
+      }
+      .tap .tap-label {
+        position: absolute;
+        top: 5cqw;
+        font-size: max(12px, 3.6cqw);
+        font-weight: 600;
+      }
+      .tap output {
+        font-size: 11cqw;
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+      }
+      .tap .bpm-unit {
+        font-size: 5cqw;
+        font-weight: 700;
+      }
+      .power-well {
+        position: absolute;
+        bottom: 0.5cqw;
+        left: 50%;
+        width: 31.25cqw;
+        aspect-ratio: 1;
+        transform: translateX(-50%);
+        border-radius: 50%;
+        background: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+      }
+      .power {
+        width: 20cqw;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        border: 1px solid transparent;
+        background: #0b0b0b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        pointer-events: auto;
+      }
+      .power:hover {
+        border-color: var(--m-pink);
+      }
+      .power svg {
+        width: 8cqw;
+        height: 8cqw;
+        fill: var(--m-pink);
+      }
+
+      /* Settings rows, as in the app's metronome settings panel */
+      .settings {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .setting {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .setting > span {
+        color: var(--muted);
+        font-size: 16px;
+      }
+      .stepper {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .stepper button {
+        width: 40px;
+        height: 40px;
+        border: 0;
+        border-radius: 10px;
+        background: transparent;
+        color: var(--text);
+        font: inherit;
+        font-size: 22px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .stepper button:hover {
+        background: var(--m-control);
+      }
+      .demo select {
+        appearance: none;
+        height: 45px;
+        padding: 0 40px 0 16px;
+        border: 0;
+        border-radius: 10px;
+        background: var(--m-control)
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")
+          no-repeat right 14px center;
+        color: var(--text);
+        font: inherit;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      .demo select:hover {
+        background-color: rgba(36, 36, 36, 1);
+      }
+      .rhythm-state {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+      }
+      .beat-row {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        width: 4rem;
+      }
+      .beat-note {
+        display: block;
+        height: 32px;
+        border: 0;
+        border-radius: 8px;
+        padding: 0;
+        background: var(--m-pink-muted);
+        cursor: pointer;
+      }
+      .beat-note[aria-pressed='true'] {
+        background: var(--m-pink);
+      }
+      .beat-note.sub {
+        background: var(--m-purple-muted);
+      }
+      .beat-note.sub[aria-pressed='true'] {
+        background: var(--m-purple);
+      }
+      .demo-note {
+        margin: 0;
+        border-top: 1px solid #222227;
+        padding-top: 18px;
+        font-size: 13px;
+        color: var(--faint);
+      }
+      .demo-note a {
+        color: var(--accent-text);
+      }
+
+      /* Sections */
+      .section-head {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .section-head h2,
+      .steps h2 {
+        margin: 0;
+        font-size: clamp(28px, 3.5vw, 36px);
+        letter-spacing: -0.025em;
+        font-weight: 600;
+        line-height: 1.15;
+      }
+      .section-head p {
+        margin: 0;
+        font-size: 17px;
+        color: var(--muted);
+      }
+      .tools {
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+        padding-block: 24px 96px;
+      }
+      .tool-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+      }
+      .tool {
+        text-decoration: none;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        transition:
+          border-color 120ms,
+          transform 120ms;
+      }
+      .tool:hover {
+        border-color: #4a3040;
+        transform: translateY(-2px);
+      }
+      .tool.featured {
+        border-color: #3a2533;
+      }
+      .tool-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+      .tool-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: var(--accent-soft);
+        color: var(--accent-text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .badge {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #f9a8d4;
+        border: 1px solid var(--accent-line);
+        border-radius: 999px;
+        padding: 6px 10px;
+      }
+      .tool h3 {
+        margin: 0 0 8px;
+        font-size: 24px;
+        font-weight: 600;
+      }
+      .tool p {
+        margin: 0;
+        font-size: 16px;
+        line-height: 1.55;
+        color: var(--muted);
+      }
+      .tool .go {
+        margin-top: auto;
+        font-weight: 500;
+        color: var(--accent-text);
+      }
+      .bars {
+        display: flex;
+        gap: 6px;
+        align-items: flex-end;
+        height: 40px;
+      }
+      .bars i {
+        width: 18px;
+        height: 22px;
+        border-radius: 6px;
+        background: #2a2a31;
+      }
+      .bars i.acc {
+        height: 40px;
+        background: var(--accent);
+      }
+      .blocks {
+        display: flex;
+        gap: 6px;
+      }
+      .blocks div {
+        min-width: 0;
+        background: var(--well);
+        border: 1px solid #2a2a31;
+        border-radius: 10px;
+        padding: 8px 10px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .blocks div b {
+        color: var(--text);
+        font-weight: 500;
+      }
+      .blocks .hl {
+        background: var(--accent-soft);
+        border-color: var(--accent-line);
+        color: #f9a8d4;
+      }
+
+      .steps-band {
+        background: var(--bg-raised);
+        border-block: 1px solid var(--line);
+      }
+      .steps {
+        display: flex;
+        flex-direction: column;
+        gap: 40px;
+        padding-block: 80px;
+      }
+      .step-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 32px;
+      }
+      .step {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .step .num {
+        font-family: var(--mono);
+        font-size: 14px;
+        color: var(--accent-text);
+      }
+      .step h3 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 600;
+      }
+      .step p {
+        margin: 0;
+        font-size: 16px;
+        line-height: 1.55;
+        color: var(--muted);
+      }
+
+      .teachers {
+        padding-block: 96px;
+      }
+      .teachers-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 48px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 40px;
+        align-items: center;
+      }
+      .teachers-copy {
+        flex: 1 1 420px;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .teachers-copy h2 {
+        margin: 0;
+        font-size: clamp(26px, 3.4vw, 34px);
+        letter-spacing: -0.025em;
+        font-weight: 600;
+        line-height: 1.15;
+      }
+      .teachers-copy p {
+        margin: 0;
+        font-size: 17px;
+        line-height: 1.55;
+        color: var(--muted);
+      }
+      .teachers-cta .btn {
+        min-height: 48px;
+        padding: 0 24px;
+        font-size: 16px;
+      }
+
+      .site-footer {
+        border-top: 1px solid var(--line);
+      }
+      .site-footer .wrap {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        padding-block: 32px;
+        font-size: 14px;
+        color: var(--faint);
+      }
+      .site-footer nav {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+      .site-footer a {
+        text-decoration: none;
+        color: var(--faint);
+      }
+      .site-footer a:hover {
+        color: var(--text);
+      }
+
+      @media (max-width: 760px) {
+        .wrap {
+          padding-inline: 16px;
+        }
+        .nav .hide-sm {
+          display: none;
+        }
+        .nav {
+          gap: 14px;
+        }
+        .site-header .wrap {
+          gap: 12px;
+        }
+        .wordmark {
+          font-size: 19px;
+        }
+        .nav a,
+        .wordmark {
+          white-space: nowrap;
+        }
+        .nav .btn {
+          padding: 0 14px;
+        }
+        .hero {
+          padding-block: 48px 40px;
+          gap: 40px;
+        }
+        .hero-ctas .btn {
+          width: 100%;
+        }
+        .demo {
+          padding: 22px;
+          border-radius: 20px;
+          gap: 22px;
+        }
+        .tools {
+          padding-bottom: 56px;
+        }
+        .steps {
+          padding-block: 48px;
+        }
+        .teachers {
+          padding-block: 48px;
+        }
+        .teachers-card {
+          padding: 24px;
+        }
+        .teachers-cta,
+        .teachers-cta .btn {
+          width: 100%;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .tool,
+        .tap {
+          transition: none;
+        }
+        .tool:hover {
+          transform: none;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
-    <script
-      src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-      async
-      defer
-    ></script>
-    <script type="module" src="/src/main.tsx"></script>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="wordmark" href="/"><span>Rhythm</span>-a-ning</a>
+        <nav class="nav" aria-label="Main">
+          <a class="hide-sm" href="/metronome">Metronome</a>
+          <a class="hide-sm" href="/builder">Rhythm Builder</a>
+          <a class="hide-sm" href="#teachers">For teachers</a>
+          <span class="divider hide-sm" aria-hidden="true"></span>
+          <a class="login" href="/login">Log in</a>
+          <a class="btn btn-primary" href="/register">Sign up</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="wrap hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Metronome · Rhythm Workflows · Click tracks</p>
+          <h1>Build & Export Custom Click Track Workflows.</h1>
+          <p class="lede">
+            Chain tempo changes, polyrhythms and subdivisions into a single
+            routine. Play it in the browser, or export a .wav.
+          </p>
+          <div class="hero-ctas">
+            <a class="btn btn-primary btn-lg" href="/metronome">
+              <svg
+                aria-hidden="true"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <polygon points="6 4 20 12 6 20 6 4" />
+              </svg>
+              Open the metronome
+            </a>
+            <a class="btn btn-ghost btn-lg" href="/builder"
+              >Try the Rhythm Builder →</a
+            >
+          </div>
+          <p class="note">Free - no account needed to play.</p>
+        </div>
+
+        <div class="demo" role="group" aria-labelledby="demo-title">
+          <h2 id="demo-title" class="sr-only">Try the metronome</h2>
+
+          <div class="clock">
+            <div class="clock-ring" aria-hidden="true"></div>
+            <div class="clock-arm" id="clock-arm" aria-hidden="true"></div>
+            <div id="clock-dots" aria-hidden="true"></div>
+            <div class="spinner">
+              <!-- decorative: the app's dial, not interactive here -->
+              <div class="rotary" id="rotary" aria-hidden="true"></div>
+              <button class="tap" type="button" id="tap" aria-label="Tap tempo">
+                <span class="tap-label" aria-hidden="true">tap</span>
+                <output id="bpm" aria-live="polite">120</output>
+                <span class="bpm-unit">BPM</span>
+              </button>
+              <div class="power-well">
+                <button
+                  class="power"
+                  type="button"
+                  id="play"
+                  aria-pressed="false"
+                  aria-label="Play"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 310 310">
+                    <path
+                      d="M221.742,46.906c-7.28-3.954-16.387-1.259-20.341,6.021c-3.955,7.279-1.259,16.386,6.02,20.341C242.937,92.561,265,129.626,265,170c0,60.654-49.346,110-110,110S45,230.654,45,170c0-40.198,21.921-77.186,57.208-96.531c7.265-3.982,9.925-13.1,5.943-20.364c-3.983-7.264-13.101-9.925-20.364-5.943C42.891,71.775,15,118.844,15,170c0,77.196,62.804,140,140,140s140-62.804,140-140C295,118.62,266.929,71.453,221.742,46.906z"
+                    />
+                    <path
+                      d="M155,130c8.284,0,15-6.716,15-15V15c0-8.284-6.716-15-15-15c-8.284,0-15,6.716-15,15v100C140,123.284,146.716,130,155,130z"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings">
+            <div class="setting">
+              <span id="beats-label">beats per measure</span>
+              <div class="stepper">
+                <button type="button" id="fewer" aria-label="Fewer beats">
+                  −
+                </button>
+                <select id="beats" aria-labelledby="beats-label"></select>
+                <button type="button" id="more" aria-label="More beats">
+                  +
+                </button>
+              </div>
+            </div>
+            <div class="setting">
+              <span id="sub-label">subdivision</span>
+              <select id="subdivision" aria-labelledby="sub-label">
+                <option value="1">quarter</option>
+                <option value="2">eighth</option>
+                <option value="3">triplet</option>
+                <option value="4">sixteenth</option>
+              </select>
+            </div>
+            <div class="setting">
+              <span id="state-label">state</span>
+            </div>
+            <div
+              class="rhythm-state"
+              id="rhythm-state"
+              role="group"
+              aria-labelledby="state-label"
+            ></div>
+          </div>
+
+          <p class="demo-note">
+            Tap the center to set the tempo. Want polyrhythms and per-beat
+            sounds?
+            <a href="/metronome">Open the full metronome</a>
+          </p>
+        </div>
+      </section>
+
+      <section class="wrap tools" aria-labelledby="tools-title">
+        <div class="section-head">
+          <h2 id="tools-title">Two Tools.</h2>
+          <p>
+            Start simple with the metronome, or build a full routine block by
+            block.
+          </p>
+        </div>
+        <div class="tool-grid">
+          <a class="tool" href="/metronome">
+            <div class="tool-head">
+              <div class="tool-icon">
+                <svg
+                  aria-hidden="true"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M9 3h6l4 18H5L9 3z" />
+                  <path d="M12 15l5-9" />
+                  <path d="M7 15h10" />
+                </svg>
+              </div>
+            </div>
+            <div>
+              <h3>Metronome</h3>
+              <p>
+                A sequenced metronome with subdivisions and polyrhythm
+                explorations.
+              </p>
+            </div>
+            <div class="bars" aria-hidden="true">
+              <i class="acc"></i><i></i><i></i><i></i><i class="acc"></i><i></i
+              ><i></i><i></i>
+            </div>
+            <span class="go">Open metronome →</span>
+          </a>
+          <a class="tool featured" href="/builder">
+            <div class="tool-head">
+              <div class="tool-icon">
+                <svg
+                  aria-hidden="true"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polygon points="12 2 22 7 12 12 2 7 12 2" />
+                  <polyline points="2 12 12 17 22 12" />
+                  <polyline points="2 17 12 22 22 17" />
+                </svg>
+              </div>
+              <span class="badge">Exports .wav</span>
+            </div>
+            <div>
+              <h3>Rhythm Builder</h3>
+              <p>
+                String rhythm blocks into a workflow with tempo changes,
+                polyrhythms and subdivisions, then play it through or export it.
+              </p>
+            </div>
+            <div class="blocks" aria-hidden="true">
+              <div style="flex: 2 1 0"><b>80</b>4/4 · ♩</div>
+              <div style="flex: 2 1 0"><b>100</b>4/4 · ♪</div>
+              <div class="hl" style="flex: 3 1 0"><b>90</b>3:2 poly</div>
+              <div style="flex: 1.5 1 0"><b>70</b>rest</div>
+            </div>
+            <span class="go">Start building →</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="steps-band" aria-labelledby="steps-title">
+        <div class="wrap steps">
+          <h2 id="steps-title">
+            From idea to practice-room audio in three steps.
+          </h2>
+          <div class="step-grid">
+            <div class="step">
+              <span class="num">01 — Build</span>
+              <h3>Stack your blocks</h3>
+              <p>
+                Set tempo, meter, subdivision and length for each block. Add a
+                polyrhythm wherever you want one.
+              </p>
+            </div>
+            <div class="step">
+              <span class="num">02 — Play</span>
+              <h3>Run it start to finish</h3>
+              <p>
+                Hit play once and the whole routine runs block to block, with
+                tempo and meter changes landing right on time.
+              </p>
+            </div>
+            <div class="step">
+              <span class="num">03 — Export</span>
+              <h3>Take it anywhere</h3>
+              <p>
+                Download a .wav to drop into your DAW, load onto a phone, take
+                wherever.
+              </p>
+            </div>
+          </div>
+          <div>
+            <a class="btn btn-ghost" style="padding: 0 22px" href="/register"
+              >Create Account</a
+            >
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="wrap teachers"
+        id="teachers"
+        aria-labelledby="teachers-title"
+      >
+        <div class="teachers-card">
+          <div class="teachers-copy">
+            <p class="eyebrow">Coming soon · For teachers</p>
+            <h2 id="teachers-title">
+              Build courses. Share them with students.
+            </h2>
+            <p>
+              A custom set of tools for teachers to package rhythm exercises
+              into courses their students can practice at home. Create an
+              account and be the first to know.
+            </p>
+          </div>
+          <div class="teachers-cta">
+            <a class="btn btn-primary" href="/register"
+              >Create a free account</a
+            >
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <a class="wordmark" style="font-size: 17px" href="/"
+          ><span>Rhythm</span>-a-ning</a
+        >
+        <nav aria-label="Footer">
+          <a href="/metronome">Metronome</a>
+          <a href="/builder">Rhythm Builder</a>
+          <a href="#teachers">For teachers</a>
+          <a href="/login">Log in</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script>
+      (function () {
+        // ---- Demo metronome: a vanilla port of the app's Display, BPM-Spinner
+        // and RhythmState. Web Audio lookahead scheduler, no dependencies ----
+        var LOOKAHEAD_MS = 25,
+          SCHEDULE_AHEAD = 0.1,
+          MIN = 20, // same clamp as the app's tap tempo
+          MAX = 250,
+          MAX_BEATS = 10, // beatCountData goes 1-10
+          SQUEEZE = 0.85, // the app's BPM-Grid subdivision spacing
+          TAP_RESET_MS = 4000;
+        var bpm = 120,
+          beats = 4,
+          div = 1,
+          state = [],
+          playing = false;
+        var ctx = null,
+          timer = null,
+          raf = 0;
+        var nextTime = 0,
+          step = 0,
+          queue = [],
+          current = null,
+          dotEls = [];
+
+        var arm = document.getElementById('clock-arm');
+        var dotsEl = document.getElementById('clock-dots');
+        var rotary = document.getElementById('rotary');
+        var tapBtn = document.getElementById('tap');
+        var bpmEl = document.getElementById('bpm');
+        var playBtn = document.getElementById('play');
+        var beatsSel = document.getElementById('beats');
+        var subSel = document.getElementById('subdivision');
+        var stateEl = document.getElementById('rhythm-state');
+
+        function clamp(n, lo, hi) {
+          return Math.max(lo, Math.min(hi, n));
+        }
+
+        // put an element on a circle: angle clockwise from 12 o'clock, radius
+        // as a percentage of its container's width
+        function place(el, deg, radius) {
+          var a = (deg * Math.PI) / 180;
+          el.style.left = 50 + radius * Math.sin(a) + '%';
+          el.style.top = 50 - radius * Math.cos(a) + '%';
+        }
+
+        function setArm(deg) {
+          arm.style.transform = 'rotate(' + deg + 'deg)';
+        }
+
+        function light(i) {
+          for (var k = 0; k < dotEls.length; k++) {
+            dotEls[k].classList.toggle('active', k === i);
+          }
+        }
+
+        // dial ticks: 17 dots, 18deg apart, with a gap at the power button
+        for (var t = 0; t < 17; t++) {
+          var tick = document.createElement('i');
+          place(tick, (t - 8) * 18, 41.6);
+          rotary.appendChild(tick);
+        }
+
+        for (var n = 1; n <= MAX_BEATS; n++) {
+          var opt = document.createElement('option');
+          opt.value = opt.textContent = String(n);
+          beatsSel.appendChild(opt);
+        }
+
+        function renderDots() {
+          dotsEl.textContent = '';
+          dotEls = [];
+          for (var s = 0; s < beats * div; s++) {
+            var b = Math.floor(s / div),
+              j = s % div;
+            var pos = j === 0 ? b : b + 0.5 + (j / div - 0.5) * SQUEEZE;
+            var dot = document.createElement('span');
+            dot.className =
+              'clock-dot' + (j ? ' sub' : '') + (state[s] ? '' : ' off');
+            place(dot, (pos / beats) * 360, 50);
+            dotsEl.appendChild(dot);
+            dotEls.push(dot);
+          }
+          light(playing && current ? current.step : 0);
+        }
+
+        function renderState() {
+          stateEl.textContent = '';
+          for (var b = 0; b < beats; b++) {
+            var row = document.createElement('div');
+            row.className = 'beat-row';
+            for (var j = 0; j < div; j++) {
+              var s = b * div + j;
+              var note = document.createElement('button');
+              note.type = 'button';
+              note.className = 'beat-note' + (j ? ' sub' : '');
+              note.dataset.step = String(s);
+              note.setAttribute('aria-pressed', String(!!state[s]));
+              note.setAttribute(
+                'aria-label',
+                'Beat ' + (b + 1) + (j ? ', note ' + (j + 1) : ''),
+              );
+              row.appendChild(note);
+            }
+            stateEl.appendChild(row);
+          }
+        }
+
+        // rebuilds the bar; keeps muted steps when only the beat count changes
+        function setMeter(nextBeats, nextDiv) {
+          var sameDiv = nextDiv === div,
+            prev = state;
+          var beatIdx = Math.floor(step / div) + (step % div ? 1 : 0);
+          beats = clamp(nextBeats, 1, MAX_BEATS);
+          div = nextDiv;
+          state = [];
+          for (var i = 0; i < beats * div; i++) {
+            state.push(sameDiv && i < prev.length ? prev[i] : 1);
+          }
+          step = sameDiv ? step % (beats * div) : (beatIdx % beats) * div;
+          beatsSel.value = String(beats);
+          renderDots();
+          renderState();
+        }
+
+        function click(time, kind) {
+          var osc = ctx.createOscillator(),
+            gain = ctx.createGain();
+          var f = kind === 'bar' ? 1600 : kind === 'beat' ? 1100 : 800;
+          var g = kind === 'bar' ? 0.9 : kind === 'beat' ? 0.6 : 0.22;
+          osc.frequency.value = f;
+          gain.gain.setValueAtTime(g, time);
+          gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.04);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(time);
+          osc.stop(time + 0.05);
+        }
+
+        function schedule() {
+          while (nextTime < ctx.currentTime + SCHEDULE_AHEAD) {
+            var total = beats * div,
+              dur = 60 / bpm / div;
+            if (state[step]) {
+              click(
+                nextTime,
+                step === 0 ? 'bar' : step % div === 0 ? 'beat' : 'sub',
+              );
+            }
+            queue.push({ time: nextTime, step: step, dur: dur, total: total });
+            nextTime += dur;
+            step = (step + 1) % total;
+          }
+        }
+
+        // lights the sounding step and sweeps the arm once per bar
+        function draw() {
+          var now = ctx.currentTime,
+            ev = null;
+          while (queue.length && queue[0].time <= now) ev = queue.shift();
+          if (ev) {
+            current = ev;
+            light(ev.step);
+          }
+          if (current) {
+            var frac = Math.min((now - current.time) / current.dur, 1);
+            setArm(((current.step + frac) / current.total) * 360);
+          }
+          raf = requestAnimationFrame(draw);
+        }
+
+        function start() {
+          if (!ctx)
+            ctx = new (window.AudioContext || window.webkitAudioContext)();
+          if (ctx.state === 'suspended') ctx.resume();
+          step = 0;
+          queue = [];
+          current = null;
+          nextTime = ctx.currentTime + 0.06;
+          schedule();
+          timer = setInterval(schedule, LOOKAHEAD_MS);
+          raf = requestAnimationFrame(draw);
+          playing = true;
+          playBtn.setAttribute('aria-pressed', 'true');
+          playBtn.setAttribute('aria-label', 'Stop');
+        }
+
+        function stop() {
+          clearInterval(timer);
+          cancelAnimationFrame(raf);
+          playing = false;
+          queue = [];
+          current = null;
+          light(0);
+          setArm(0);
+          playBtn.setAttribute('aria-pressed', 'false');
+          playBtn.setAttribute('aria-label', 'Play');
+        }
+
+        function setBpm(value) {
+          bpm = clamp(Math.round(value), MIN, MAX);
+          bpmEl.textContent = String(bpm);
+        }
+
+        // ---- Tap tempo: median of the last 5 intervals ----
+        var lastTap = 0,
+          taps = [];
+        tapBtn.addEventListener('click', function () {
+          var now = performance.now();
+          // a long pause starts a new count rather than producing a tiny tempo
+          if (lastTap && now - lastTap <= TAP_RESET_MS) {
+            taps.push(now - lastTap);
+            if (taps.length > 5) taps.shift();
+            var sorted = taps.slice().sort(function (a, b) {
+              return a - b;
+            });
+            var mid = Math.floor(sorted.length / 2);
+            var median =
+              sorted.length % 2
+                ? sorted[mid]
+                : (sorted[mid - 1] + sorted[mid]) / 2;
+            setBpm(60000 / median);
+          } else {
+            taps = [];
+          }
+          lastTap = now;
+        });
+
+        // ---- Settings ----
+        playBtn.addEventListener('click', function () {
+          playing ? stop() : start();
+        });
+        document.getElementById('fewer').addEventListener('click', function () {
+          setMeter(beats - 1, div);
+        });
+        document.getElementById('more').addEventListener('click', function () {
+          setMeter(beats + 1, div);
+        });
+        beatsSel.addEventListener('change', function () {
+          setMeter(Number(beatsSel.value), div);
+        });
+        subSel.addEventListener('change', function () {
+          setMeter(beats, Number(subSel.value));
+        });
+        stateEl.addEventListener('click', function (e) {
+          var note = e.target.closest('.beat-note');
+          if (!note) return;
+          var s = Number(note.dataset.step);
+          state[s] = state[s] ? 0 : 1;
+          note.setAttribute('aria-pressed', String(!!state[s]));
+          dotEls[s].classList.toggle('off', !state[s]);
+        });
+        document.addEventListener('visibilitychange', function () {
+          if (document.hidden && playing) stop();
+        });
+
+        setMeter(beats, div);
+        setArm(0);
+      })();
+    </script>
   </body>
 </html>

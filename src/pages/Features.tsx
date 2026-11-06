@@ -1,5 +1,3 @@
-import { Link } from 'react-router-dom';
-
 import BuilderIcon from '../assets/icons/builder.svg?react';
 // import HeadphoneIcon from '../assets/icons/headphone.svg?react';
 import LightningIcon from '../assets/icons/lightning.svg?react';
@@ -84,8 +82,8 @@ export default function Features() {
           header="And Much More"
           description={
             <>
-              Check out the <Link to="/">project timeline</Link> for more
-              upcoming features and enhancements
+              Check out the <a href="/">project timeline</a> for more upcoming
+              features and enhancements
             </>
           }
           onClick={() => {}}

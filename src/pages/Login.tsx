@@ -29,7 +29,7 @@ export default function Login() {
       if (response) {
         toast('login successful');
         await refresh();
-        navigate('/');
+        navigate('/metronome');
         return;
       }
 
