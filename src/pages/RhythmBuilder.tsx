@@ -22,8 +22,8 @@ import AddVerticalButton from '../components/Buttons/AddVertical';
 import RhythmBuilderCard from '../components/Cards/RhythmBuilderCard';
 import TextInput from '../components/TextInput';
 import { DefaultRhythmBlock } from '../context/BuilderContext.types';
+import { useAuthContext } from '../context/useAuthContext';
 import { useRhythmBuilderContext } from '../context/useBuilderContext';
-import { useIndexedDBContext } from '../context/useIndexedDBContext';
 import '../css/RhythmBuilder.css';
 import { generateUUID, getBeatSoundState } from '../services/rhythm.services';
 import { loadSounds } from '../services/sound.services';
@@ -43,9 +43,10 @@ export default function RhythmBuilder() {
     getWorkflowTimeStr,
     getWorkflowTimeInt,
     updateWorkflowName,
+    saveWorkflow,
   } = useRhythmBuilderContext();
 
-  const { saveWorkflow } = useIndexedDBContext();
+  const { isAuthenticated } = useAuthContext();
   const [isPlaying, setIsPlaying] = useState(false);
   const [cardAudioId, setCardAudioId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -55,16 +56,18 @@ export default function RhythmBuilder() {
   const scrollableContainerRef = useRef<HTMLDivElement | null>(null);
 
   const save = async (): Promise<void> => {
+    // playback state is deliberately untouched; saving only patches ids
     setIsLoading(true);
-
-    const response = await saveWorkflow(rhythmWorkflow);
-    if (response.error) {
-      console.log('got an error: ', response.error);
+    try {
+      await saveWorkflow();
+      setHasChange(false);
+      toast('workflow saved');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'unknown error';
+      toast(`failed to save workflow: ${message}`, { type: 'error' });
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
-    setHasChange(false);
-    toast('workflow saved');
   };
 
   const addNewBlock = (): void => {
@@ -425,13 +428,15 @@ export default function RhythmBuilder() {
           text={rhythmWorkflow.name}
           onChange={(value) => updateWorkflowInput(value)}
         />
-        <button
-          disabled={isLoading || !hasChange}
-          className="color-white outline"
-          onClick={() => save()}
-        >
-          <SaveIcon style={{ width: '18px' }} />
-        </button>
+        {isAuthenticated ? (
+          <button
+            disabled={isLoading || !hasChange}
+            className="color-white outline"
+            onClick={() => save()}
+          >
+            <SaveIcon style={{ width: '18px' }} />
+          </button>
+        ) : null}
 
         <button
           className="color-white outline"

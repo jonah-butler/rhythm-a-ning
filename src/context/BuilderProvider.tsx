@@ -1,6 +1,7 @@
 import type { Active, Over } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useMemo, useState, type ReactNode } from 'react';
+import WorkflowApi from '../services/api/workflow';
 import { RhythmBuilderContext } from './BuilderContext';
 import {
   DefaultRhythmBlock,
@@ -13,6 +14,7 @@ import { type RhythmBlockStore } from './IndexedDB.types';
 import {
   averageTempo,
   totalMeasures,
+  toWorkflowBody,
   totalTime,
   withSubdivisions,
 } from './builder.helpers';
@@ -108,6 +110,33 @@ export function RhythmBuilderProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const saveWorkflow = async (): Promise<void> => {
+    const snapshot = rhythmWorkflow;
+    const body = toWorkflowBody(snapshot);
+    const saved = snapshot.id
+      ? await WorkflowApi.updateWorkflow(snapshot.id, body)
+      : await WorkflowApi.createWorkflow(body);
+
+    // Patch rather than replace: block ids must stay stable so playback and
+    // dnd keep matching. Rhythms come back in payload order, so pair them with
+    // the snapshot by index, then apply by client id in case blocks were
+    // added, moved or removed while the request was in flight.
+    const rhythmIds = new Map(
+      snapshot.blocks.map((block, i) => [block.id, saved.rhythms[i]?.id]),
+    );
+
+    setRhythmWorkflow((prev) => ({
+      ...prev,
+      id: saved.workflowId,
+      createdAt: Date.parse(saved.createdAt),
+      updatedAt: Date.parse(saved.updatedAt),
+      blocks: prev.blocks.map((block) => {
+        const rhythmId = rhythmIds.get(block.id);
+        return rhythmId ? { ...block, rhythmId } : block;
+      }),
+    }));
+  };
+
   const value = useMemo(
     () => ({
       rhythmWorkflow,
@@ -127,6 +156,7 @@ export function RhythmBuilderProvider({ children }: { children: ReactNode }) {
       sections: rhythmWorkflow.sections,
       deleteSection,
       updateSection,
+      saveWorkflow,
     }),
     [rhythmWorkflow],
   );

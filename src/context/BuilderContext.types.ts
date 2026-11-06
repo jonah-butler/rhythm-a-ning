@@ -8,7 +8,10 @@ import { type BeatState } from '../timing_engine/rhythm.types';
 import type { RhythmBlockStore } from './IndexedDB.types';
 
 export type RhythmBlock = {
+  /** client id, stable for the block's lifetime (dnd keys, playback matching) */
   id: string;
+  /** server rhythm id, undefined until the block has been saved */
+  rhythmId?: string;
   bpm: number;
   measures: number;
   /** One subdivision per beat, e.g. [1, 1/3, 1, 1]. */
@@ -66,7 +69,7 @@ export const DefaultRhythmBlock: RhythmBlock = {
 
 export const DefaultRhythmWorkflow: RhythmBlockStore = {
   name: '',
-  id: generateUUID(),
+  id: '', // empty until saved; server assigns the workflow id
   createdAt: Date.now(),
   updatedAt: Date.now(),
   sections: [DefaultSection],
@@ -76,7 +79,7 @@ export const DefaultRhythmWorkflow: RhythmBlockStore = {
 export const DefaultRhythmWorkflowFactory = (): RhythmBlockStore => {
   return {
     name: '',
-    id: generateUUID(),
+    id: '', // empty until saved; server assigns the workflow id
     createdAt: Date.now(),
     updatedAt: Date.now(),
     sections: [DefaultSection],

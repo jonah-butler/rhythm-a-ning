@@ -216,7 +216,7 @@ function toLegacySubdivision(subs: number[]): Subdivision {
 }
 
 export function createRhythmPayload(
-  rhythm: RhythmSlim,
+  rhythm: Omit<RhythmSlim, 'createdAt' | 'updatedAt'>,
   meta: { title: string; description: string },
 ): CreateRhythmBody {
   const payload: Partial<CreateRhythmBody> = {

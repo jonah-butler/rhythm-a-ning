@@ -7,15 +7,16 @@ import ResetIcon from '../../assets/icons/reset.svg?react';
 import SectionsIcon from '../../assets/icons/sections.svg?react';
 import TrashIcon from '../../assets/icons/trash.svg?react';
 import Modal from '../../components/Modals/Generic';
-import {
-  averageTempo,
-  totalMeasures,
-  totalTime,
-} from '../../context/builder.helpers';
-import type { RhythmBlock, Section } from '../../context/BuilderContext.types';
-import { type RhythmBlockStore } from '../../context/IndexedDB.types';
+import { fromWorkflowResponse } from '../../context/builder.helpers';
+import type { Section } from '../../context/BuilderContext.types';
+import { useAuthContext } from '../../context/useAuthContext';
 import { useRhythmBuilderContext } from '../../context/useBuilderContext';
-import { useIndexedDBContext } from '../../context/useIndexedDBContext';
+import type { WorkflowListItem } from '../../services/api/types/workflow.types';
+import WorkflowApi from '../../services/api/workflow';
+import { generateUUID } from '../../services/rhythm.services';
+
+const errorMessage = (err: unknown): string =>
+  err instanceof Error ? err.message : 'unknown error';
 
 export default function BuilderHeader() {
   const [newWorkflowModalOpen, setNewWorkflowModalOpen] = useState(false);
@@ -26,7 +27,7 @@ export default function BuilderHeader() {
   const [sectionColor, setSectionColor] = useState('#f821ad');
   const [sectionName, setSectionName] = useState('');
 
-  const [workflows, setWorkflows] = useState<RhythmBlockStore[]>([]);
+  const [workflows, setWorkflows] = useState<WorkflowListItem[]>([]);
 
   const {
     rhythmWorkflow,
@@ -36,10 +37,10 @@ export default function BuilderHeader() {
     addSection,
     deleteSection,
     updateSection,
+    saveWorkflow,
   } = useRhythmBuilderContext();
 
-  const { saveWorkflow, getWorkflows, getWorkflowById, deleteWorkflowById } =
-    useIndexedDBContext();
+  const { isAuthenticated } = useAuthContext();
 
   const reset = () => {
     resetBlocks();
@@ -55,9 +56,15 @@ export default function BuilderHeader() {
   };
 
   const createNewWorkflow = async () => {
-    const response = await saveWorkflow(rhythmWorkflow);
-    if (response.error) {
-      console.log('got an error: ', response.error);
+    if (isAuthenticated) {
+      try {
+        await saveWorkflow();
+      } catch (err) {
+        toast(`failed to save workflow: ${errorMessage(err)}`, {
+          type: 'error',
+        });
+        return;
+      }
     }
 
     resetWorkflow();
@@ -76,31 +83,33 @@ export default function BuilderHeader() {
     setLoadModalOpen(false);
   };
 
+  // first page only for now
+  const fetchWorkflows = async (): Promise<void> => {
+    try {
+      const { workflows } = await WorkflowApi.getWorkflows(0);
+      setWorkflows(workflows);
+    } catch (err) {
+      toast(`failed to get workflows: ${errorMessage(err)}`, { type: 'error' });
+    }
+  };
+
   const openLoadModal = async (): Promise<void> => {
     setLoadModalOpen(true);
-    const workflows = await getWorkflows();
-    setWorkflows(workflows);
+    await fetchWorkflows();
   };
 
-  const getTotalMeasures = (workflow: RhythmBlock[]): number => {
-    return totalMeasures(workflow);
-  };
-
-  const getAverageTempo = (workflow: RhythmBlock[]): number => {
-    return averageTempo(workflow);
-  };
-
-  const getWorkflowTime = (workflow: RhythmBlock[]): string => {
-    return totalTime(workflow).toFixed(2).replace('.', ':');
+  const getWorkflowTime = (totalMinutes: number): string => {
+    return totalMinutes.toFixed(2).replace('.', ':');
   };
 
   const selectWorkflow = async (id: string): Promise<void> => {
-    const workflow = await getWorkflowById(id);
-    if (workflow) {
-      setActiveBlocks(workflow);
+    try {
+      const workflow = await WorkflowApi.getWorkflowById(id);
+      setActiveBlocks(fromWorkflowResponse(workflow));
+      setLoadModalOpen(false);
+    } catch (err) {
+      toast(`failed to load workflow: ${errorMessage(err)}`, { type: 'error' });
     }
-
-    setLoadModalOpen(false);
   };
 
   const handleMobileActionMenu = (fn: () => void): void => {
@@ -113,7 +122,7 @@ export default function BuilderHeader() {
       id: Date.now(),
       color: sectionColor,
       label: sectionName,
-      value: `${Date.now()}`,
+      value: generateUUID(), // sent to the api as sectionId
     };
 
     addSection(section);
@@ -123,19 +132,21 @@ export default function BuilderHeader() {
 
   const deleteWorkflow = async (id: string): Promise<void> => {
     try {
-      const didDelete = !(await deleteWorkflowById(id));
-      if (!didDelete) {
-        console.log('did not delete');
-        return;
-      }
-
-      const workflows = await getWorkflows();
-      setWorkflows(workflows);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      toast('workflow deleted');
+      await WorkflowApi.deleteWorkflow(id);
+    } catch (err) {
+      toast(`failed to delete workflow: ${errorMessage(err)}`, {
+        type: 'error',
+      });
+      return;
     }
+
+    // the open workflow no longer exists; a later save would PUT to a 404
+    if (id === rhythmWorkflow.id) {
+      resetWorkflow();
+    }
+
+    toast('workflow deleted');
+    await fetchWorkflows();
   };
 
   return (
@@ -168,12 +179,14 @@ export default function BuilderHeader() {
           <BuilderIcon style={{ width: '18px' }} /> New
         </button>
 
-        <button
-          className="color-white font-size-13"
-          onClick={() => handleMobileActionMenu(() => openLoadModal())}
-        >
-          <FolderIcon style={{ width: '18px' }} /> Load
-        </button>
+        {isAuthenticated ? (
+          <button
+            className="color-white font-size-13"
+            onClick={() => handleMobileActionMenu(() => openLoadModal())}
+          >
+            <FolderIcon style={{ width: '18px' }} /> Load
+          </button>
+        ) : null}
       </div>
 
       {sectionsModalOpen ? (
@@ -345,21 +358,21 @@ export default function BuilderHeader() {
                     {workflows.map((workflow) => {
                       return (
                         <tr
-                          key={workflow.id}
-                          onClick={() => selectWorkflow(workflow.id)}
+                          key={workflow.workflowId}
+                          onClick={() => selectWorkflow(workflow.workflowId)}
                         >
                           <td>{workflow.name}</td>
-                          <td>{workflow.blocks.length}</td>
-                          <td>{getTotalMeasures(workflow.blocks)}</td>
-                          <td>{getAverageTempo(workflow.blocks)}</td>
-                          <td>{getWorkflowTime(workflow.blocks)}</td>
+                          <td>{workflow.blockCount}</td>
+                          <td>{workflow.totalMeasures}</td>
+                          <td>{workflow.averageTempo}</td>
+                          <td>{getWorkflowTime(workflow.totalMinutes)}</td>
                           <td>
                             {' '}
                             <button
                               className="color-white"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                deleteWorkflow(workflow.id);
+                                deleteWorkflow(workflow.workflowId);
                               }}
                             >
                               <TrashIcon style={{ width: '12px' }} />

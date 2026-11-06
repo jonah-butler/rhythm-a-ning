@@ -297,7 +297,7 @@ export default function RhythmBuilderCard({
 
   const copyBlock = (): void => {
     const name = block.name ? `${block.name} copy` : `Block ${index + 1} copy`;
-    addBlock({ ...block, id: generateUUID(), name });
+    addBlock({ ...block, id: generateUUID(), rhythmId: undefined, name });
   };
 
   const updateSection = (value: string): void => {

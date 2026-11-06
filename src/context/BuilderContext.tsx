@@ -26,6 +26,8 @@ export type RhythmBuilderContextType = {
   addSection: (section: Section) => void;
   deleteSection: (id: number) => void;
   updateSection: (section: Section) => void;
+  /** creates or updates via the api; throws on failure */
+  saveWorkflow: () => Promise<void>;
 };
 
 export const RhythmBuilderContext =
