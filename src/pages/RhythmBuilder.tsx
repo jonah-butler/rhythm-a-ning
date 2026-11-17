@@ -425,10 +425,13 @@ export default function RhythmBuilder() {
             onChange={(value) => updateWorkflowInput(value)}
           />
         ) : null}
+      </section>
+
+      <section className="flex justify-center align-center f-gap4 mt-4">
         {isAuthenticated ? (
           <button
             disabled={isLoading || !hasChange}
-            className="color-white outline"
+            className="xsmall color-white outline"
             onClick={() => save()}
           >
             <SaveIcon style={{ width: '18px' }} />
@@ -436,14 +439,14 @@ export default function RhythmBuilder() {
         ) : null}
 
         <button
-          className="color-white outline"
+          className="xsmall color-white outline"
           onClick={() => exportWorkflow()}
           disabled={isLoading}
         >
           <ExportIcon style={{ width: '18px' }} />
         </button>
 
-        <button onClick={() => playWorkflow()} className="small filled">
+        <button onClick={() => playWorkflow()} className="xsmall filled">
           {isPlaying ? <PauseIcon /> : <PlayIcon />}
         </button>
       </section>
