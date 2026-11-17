@@ -5,7 +5,8 @@
   -moz-user-select: none; /* Firefox */
   -ms-user-select: none; /* Internet Explorer/Edge */
   -khtml-user-select: none; /* Konqueror HTML */
-  overflow-x: hidden;
+  /* overflow-x: hidden; */
+  display: flex;
 }
 
 input[type='color'],
@@ -194,6 +195,11 @@ button.filled:hover {
 button.small {
   padding: 0.5rem 0.9rem;
   font-size: 0.8rem;
+}
+
+button.xsmall {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.6rem;
 }
 
 button.sm-padding {

@@ -39,6 +39,10 @@
   color: var(--muted-pink-purple);
 }
 
+.color-pink-purple {
+  color: var(--pink-purple);
+}
+
 body {
   /* display: flex; */
   margin: 0px;

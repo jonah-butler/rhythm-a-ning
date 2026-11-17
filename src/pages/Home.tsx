@@ -1,9 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import BuilderIcon from '../assets/icons/builder.svg?react';
-import HeadphoneIcon from '../assets/icons/headphone.svg?react';
 import NoteIcon from '../assets/icons/note.svg?react';
-import Badge from '../components/Badge';
 import BigButton from '../components/Buttons/BigButton';
 import { useAuthContext } from '../context/useAuthContext';
 import '../css/Home.css';
@@ -36,9 +34,6 @@ export default function Home() {
           <h1>
             <span>Rhythm</span>-a-ning
           </h1>
-        </section>
-        <section className="flex justify-center">
-          <Badge text="Rhythm Studio" icon={<HeadphoneIcon />} />
         </section>
         <section className="flex justify-center">
           <p className="color-secondary">Play and explore rhythm.</p>

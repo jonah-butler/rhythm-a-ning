@@ -5,6 +5,7 @@
 # Don't add a "/*" catch-all: it would take over "/" and /assets/*.
 # Keep in sync with APP_ROUTES in vite.config.ts.
 
+/home                   /app  200
 /metronome              /app  200
 /builder                /app  200
 /login                  /app  200

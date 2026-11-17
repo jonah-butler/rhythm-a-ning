@@ -4,6 +4,7 @@
   --width-sm: 320px;
   --height-sm: 320px;
   --z: 10;
+  margin: 0 auto;
 
   position: relative;
   width: var(--width-lg);

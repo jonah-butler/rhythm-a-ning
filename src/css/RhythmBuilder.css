@@ -15,6 +15,7 @@
 .builder-subheader {
   width: 98%;
   margin-bottom: 1rem;
+  margin: 0 auto;
 
   .sequence-bar-container {
     display: flex;

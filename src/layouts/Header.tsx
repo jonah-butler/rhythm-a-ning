@@ -46,7 +46,7 @@ export default function Header() {
           {isAuthenticated ? (
             <button
               aria-label="Account"
-              className="color-white small"
+              className="header-account-button color-white small"
               onClick={() => navigate('/account')}
             >
               <UserIcon style={{ width: '18px' }} />

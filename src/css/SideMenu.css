@@ -1,0 +1,152 @@
+.side-menu__container {
+  box-sizing: border-box;
+  height: 100vh;
+  width: 12rem;
+  flex-shrink: 0;
+  padding: 1rem;
+  border-right: 1px solid var(--light-black);
+  border-bottom: 1px solid var(--light-black);
+  position: sticky;
+  top: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: width 0.2s ease;
+  display: flex;
+  flex-direction: column;
+
+  .side-menu__header {
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .side-menu__section {
+    margin-top: 2rem;
+
+    .section-title {
+      margin-bottom: 0.5rem;
+      font-size: 12px;
+      opacity: 0.7;
+      transition: opacity 0.2s ease;
+    }
+
+    .section-link {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 14px;
+      color: white;
+      text-decoration: none;
+      margin-bottom: 0.3rem;
+      border-radius: 8px;
+      padding: 0.3rem;
+      transition: all 0.3s ease;
+      border-left: 2px solid transparent;
+      position: relative;
+      left: -5px;
+
+      .section-link__label {
+        opacity: 0.6;
+        transition: opacity 0.2s ease;
+      }
+
+      &:hover,
+      &.active {
+        background: #260d1e;
+        border-left: 2px solid var(--pink-purple);
+
+        .section-link__label {
+          opacity: 1;
+        }
+      }
+    }
+  }
+
+  .side-menu__account {
+    margin-top: auto; /* push to the bottom of the column */
+    color: white;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--light-black);
+
+    .account-avatar {
+      flex-shrink: 0;
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: 50%;
+      background: #260d1e;
+      border: 1px solid var(--pink-purple);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      svg {
+        width: 15px;
+        height: 15px;
+      }
+    }
+
+    .account-email {
+      font-size: 12px;
+      opacity: 0.7;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: opacity 0.2s ease;
+    }
+  }
+
+  /* collapsed: icons only */
+  &.closed {
+    width: 3.5rem;
+    padding-inline: 0.5rem;
+
+    .side-menu__header {
+      justify-content: center;
+
+      > div {
+        display: none;
+      }
+    }
+
+    /* keep its height so icons don't shift vertically */
+    .section-title {
+      opacity: 0;
+    }
+
+    .section-link {
+      gap: 0;
+      justify-content: center;
+      left: 0;
+
+      .section-link__label {
+        opacity: 0;
+        width: 0;
+        overflow: hidden;
+      }
+    }
+
+    .side-menu__account {
+      justify-content: center;
+      gap: 0;
+
+      .account-email {
+        opacity: 0;
+        width: 0;
+      }
+    }
+  }
+}
+
+/* mobile: replaced by the bottom tab bar (MobileNav) */
+@media (max-width: 768px) {
+  .side-menu__container {
+    display: none;
+  }
+}

@@ -155,7 +155,7 @@ export default function BuilderHeader() {
         className="mobile-menu-button color-white"
         onClick={() => setMobileMenuOpen((prev) => !prev)}
       >
-        ☰ Menu
+        ☰
       </button>
       <div className={`builder-actions ${mobileMenuOpen ? 'open' : ''}`}>
         <button

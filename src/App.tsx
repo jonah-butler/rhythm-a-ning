@@ -3,6 +3,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import RootLayout from './layouts/RootLayout';
 import Account from './pages/Account';
 import Features from './pages/Features';
+import Home from './pages/Home';
 import Login from './pages/Login';
 import Metronome from './pages/Metronome';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -16,6 +17,7 @@ export default function App() {
   return (
     <Routes>
       <Route element={<RootLayout />}>
+        <Route path="/home" element={<Home />} />
         <Route path="/metronome" element={<Metronome />} />
         <Route path="/builder" element={<RhythmBuilder />} />
         <Route path="/register" element={<Register />} />

@@ -8,6 +8,7 @@ import svgr from 'vite-plugin-svgr';
  * Keep in sync with public/_redirects.
  */
 const APP_ROUTES = [
+  '/home',
   '/metronome',
   '/builder',
   '/login',

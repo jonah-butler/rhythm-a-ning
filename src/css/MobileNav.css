@@ -1,0 +1,52 @@
+/* hidden on desktop; the side menu handles navigation there */
+.mobile-nav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* the side menu hides itself at this breakpoint; see SideMenu.css */
+
+  /* the header's account button duplicates the Account tab */
+  .header-account-button {
+    display: none;
+  }
+
+  /* keep the footer from sitting behind the tab bar */
+  #appContainer {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+
+  .mobile-nav {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    background: var(--medium-black);
+    border-top: 1px solid var(--light-black);
+    padding-bottom: env(safe-area-inset-bottom); /* iPhone home bar */
+
+    .mobile-nav__tab {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.2rem;
+      min-height: 3.5rem;
+      font-size: 11px;
+      color: white;
+      text-decoration: none;
+      opacity: 0.6;
+      border-top: 2px solid transparent;
+      transition: opacity 0.2s ease;
+
+      &.active {
+        opacity: 1;
+        color: var(--pink-purple);
+        border-top-color: var(--pink-purple);
+      }
+    }
+  }
+}

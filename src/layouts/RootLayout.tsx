@@ -8,6 +8,8 @@ import { MetronomeProvider } from '../context/MetronomeProvider';
 import '../css/RootLayout.css';
 import Header from '../layouts/Header';
 import Footer from './Footer';
+import MobileNav from './MobileNav';
+import SideMenu from './SideMenu';
 
 export default function RootLayout() {
   return (
@@ -17,13 +19,19 @@ export default function RootLayout() {
           <RhythmBuilderProvider>
             <MetronomeProvider>
               <MenuProvider>
-                <Header />
+                <SideMenu />
+                {/* <Header /> */}
                 <main id="appContainer">
-                  <Outlet />
-                  {/* <Flare y={0} x={100} />
+                  <Header />
+
+                  <section className="outlet-container">
+                    <Outlet />
+                    {/* <Flare y={0} x={100} />
                   <Flare y={200} x={400} /> */}
+                  </section>
+                  <Footer />
                 </main>
-                <Footer />
+                <MobileNav />
               </MenuProvider>
             </MetronomeProvider>
           </RhythmBuilderProvider>

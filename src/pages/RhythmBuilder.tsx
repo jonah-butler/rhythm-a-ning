@@ -388,13 +388,8 @@ export default function RhythmBuilder() {
               Time
             </span>{' '}
             <span className="font-size-16 font-weight-600">
-              {getWorkflowTimeStr()} min
+              {getWorkflowTimeStr()}
             </span>
-          </div>
-          <div>
-            <button onClick={() => playWorkflow()} className="small filled">
-              {isPlaying ? <PauseIcon /> : <PlayIcon />}
-            </button>
           </div>
         </div>
       </section>
@@ -422,12 +417,14 @@ export default function RhythmBuilder() {
         </section>
       </section>
 
-      <section className="flex justify-center align-center f-gap4">
-        <TextInput
-          placeholder="untitled workflow"
-          text={rhythmWorkflow.name}
-          onChange={(value) => updateWorkflowInput(value)}
-        />
+      <section className="flex justify-center align-center f-gap4 mt-4">
+        {isAuthenticated ? (
+          <TextInput
+            placeholder="untitled workflow"
+            text={rhythmWorkflow.name}
+            onChange={(value) => updateWorkflowInput(value)}
+          />
+        ) : null}
         {isAuthenticated ? (
           <button
             disabled={isLoading || !hasChange}
@@ -444,6 +441,10 @@ export default function RhythmBuilder() {
           disabled={isLoading}
         >
           <ExportIcon style={{ width: '18px' }} />
+        </button>
+
+        <button onClick={() => playWorkflow()} className="small filled">
+          {isPlaying ? <PauseIcon /> : <PlayIcon />}
         </button>
       </section>
 

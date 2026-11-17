@@ -49,7 +49,7 @@ export default function Login() {
 
   return (
     <div className="mt-4 flex justify-center flex-auto align-center flex-col">
-      <section className="mb-4 width-100 text-left">
+      <section className="mb-4 width-100 text-center">
         <h1>Login</h1>
       </section>
       <BasicCard>

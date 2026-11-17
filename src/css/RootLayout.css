@@ -1,12 +1,17 @@
 #appContainer {
   display: flex;
   align-items: center;
-  max-width: 1280px;
-  margin: 0 auto;
+  /* margin: 0 auto; */
   text-align: center;
   display: flex;
   flex-direction: column;
   position: relative;
-  /* overflow: hidden; */
+  overflow: hidden;
   min-height: 76vh;
+  flex: 1;
+  min-width: 0;
+
+  .outlet-container {
+    width: 100%;
+  }
 }
